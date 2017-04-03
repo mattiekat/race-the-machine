@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project version="4">
+  <component name="ProjectModuleManager">
+    <modules>
+      <module fileurl="file://$PROJECT_DIR$/.idea/modules/image-input/image-input.iml" filepath="$PROJECT_DIR$/.idea/modules/image-input/image-input.iml" group="image-input" />
+      <module fileurl="file://$PROJECT_DIR$/.idea/modules/image-input/image-input_main.iml" filepath="$PROJECT_DIR$/.idea/modules/image-input/image-input_main.iml" group="image-input" />
+      <module fileurl="file://$PROJECT_DIR$/.idea/modules/image-input/image-input_test.iml" filepath="$PROJECT_DIR$/.idea/modules/image-input/image-input_test.iml" group="image-input" />
+      <module fileurl="file://$PROJECT_DIR$/.idea/modules/neural-net/neural-net.iml" filepath="$PROJECT_DIR$/.idea/modules/neural-net/neural-net.iml" group="neural-net" />
+      <module fileurl="file://$PROJECT_DIR$/.idea/modules/neural-net/neural-net_main.iml" filepath="$PROJECT_DIR$/.idea/modules/neural-net/neural-net_main.iml" group="neural-net" />
+      <module fileurl="file://$PROJECT_DIR$/.idea/modules/neural-net/neural-net_test.iml" filepath="$PROJECT_DIR$/.idea/modules/neural-net/neural-net_test.iml" group="neural-net" />
+      <module fileurl="file://$PROJECT_DIR$/.idea/modules/race-the-machine.iml" filepath="$PROJECT_DIR$/.idea/modules/race-the-machine.iml" />
+    </modules>
+  </component>
+</project>

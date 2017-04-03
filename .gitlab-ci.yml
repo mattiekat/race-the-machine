@@ -1,0 +1,33 @@
+image: java:8
+
+before_script:
+    - chmod +x gradlew
+
+build:
+  stage: build
+  script:
+    - ./gradlew -g /cache/.gradle clean assemble
+  allow_failure: false
+  tags:
+    - gradle
+
+test:
+  stage: test
+  script:
+    - ./gradlew -g /cache/.gradle check
+  tags:
+    - gradle
+
+pages:
+  stage: javadoc
+  script:
+    - ./gradlew -g /cache/.gradle javadoc
+  artifacts:
+    paths:
+      - image-input/build/docs/javadoc
+      - neural-net/build/docs/javadoc
+  only:
+    - master
+    - dev
+  tags:
+    - gradle

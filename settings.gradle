@@ -1,0 +1,4 @@
+rootProject.name = 'race-the-machine'
+include 'image-input'
+include 'neural-net'
+

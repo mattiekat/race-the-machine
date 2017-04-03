@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<module external.linked.project.id=":neural-net" external.linked.project.path="$MODULE_DIR$/../../../neural-net" external.root.project.path="$MODULE_DIR$/../../.." external.system.id="GRADLE" external.system.module.group="plu.teamtwo" external.system.module.version="1.0-SNAPSHOT" type="JAVA_MODULE" version="4">
+  <component name="NewModuleRootManager" inherit-compiler-output="true">
+    <exclude-output />
+    <content url="file://$MODULE_DIR$/../../../neural-net">
+      <excludeFolder url="file://$MODULE_DIR$/../../../neural-net/.gradle" />
+      <excludeFolder url="file://$MODULE_DIR$/../../../neural-net/build" />
+    </content>
+    <orderEntry type="inheritedJdk" />
+    <orderEntry type="sourceFolder" forTests="false" />
+  </component>
+</module>
