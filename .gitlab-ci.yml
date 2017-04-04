@@ -19,7 +19,7 @@ test:
     - gradle
 
 pages:
-  stage: javadoc
+  stage: deploy
   script:
     - ./gradlew -g /cache/.gradle javadoc
   artifacts:
