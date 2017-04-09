@@ -15,6 +15,7 @@ test:
   stage: test
   script:
     - ./gradlew -g /cache/.gradle check
+    - ./gradlew -g /cache/.gradle pythonTest
   tags:
     - gradle
 
