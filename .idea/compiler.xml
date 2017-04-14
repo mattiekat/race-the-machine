@@ -6,8 +6,6 @@
       <module name="image-input_test" target="1.8" />
       <module name="neural-net_main" target="1.8" />
       <module name="neural-net_test" target="1.8" />
-      <module name="race-the-machine_main" target="1.5" />
-      <module name="race-the-machine_test" target="1.5" />
     </bytecodeTargetLevel>
   </component>
 </project>
