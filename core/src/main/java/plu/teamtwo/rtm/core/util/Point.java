@@ -218,8 +218,26 @@ public class Point implements Comparable<Point> {
      * @return <code>Orientation</code> enum based on the given <code>Points'</code> positions.
      */
     public static Orientation orientation(Point p, Point q, Point r) {
-        double val = (q.y.doubleValue() - p.y.doubleValue()) * (r.x.doubleValue() - q.x.doubleValue()) -
-                     (q.x.doubleValue() - p.x.doubleValue()) * (r.y.doubleValue() - q.y.doubleValue());
+
+        // Get Our Parts
+        double t0 = q.y.doubleValue() - p.y.doubleValue();
+        double t1 = r.x.doubleValue() - q.x.doubleValue();
+        double t2 = q.x.doubleValue() - p.x.doubleValue();
+        double t3 = r.y.doubleValue() - q.y.doubleValue();
+
+        // Avoid multiplying Infinity with 0
+        double val1, val2;
+        if(t0 == 0.0 || t1 == 0.0) val1 = 0.0;
+        else val1 = t0 * t1;
+        if(t2 == 0.0 || t3 == 0.0) val2 = 0.0;
+        else val2 = t2 * t3;
+
+        // Subtracting an infinity from itself results in NaN
+        if(val1 == Double.POSITIVE_INFINITY && val2 == Double.POSITIVE_INFINITY) return Orientation.COLINEAR;
+        if(val1 == Double.NEGATIVE_INFINITY && val2 == Double.NEGATIVE_INFINITY) return Orientation.COLINEAR;
+
+        // Final Check
+        double val = val1 - val2;
         if(Math.abs(val) < EPSILON) return Orientation.COLINEAR;
         else return val > 0.0 ? Orientation.CLOCKWISE : Orientation.COUNTER_CLOCKWISE;
     }
