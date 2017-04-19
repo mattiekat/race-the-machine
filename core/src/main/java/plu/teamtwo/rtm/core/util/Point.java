@@ -7,6 +7,11 @@ package plu.teamtwo.rtm.core.util;
 public class Point implements Comparable<Point> {
 
     /**
+     * Epsilon value used for comparison calculations.
+     */
+    public static final double EPSILON = 0.0001;
+
+    /**
      * <code>x</code> coordinate of the Point.
      */
     public final Number x;
@@ -173,6 +178,91 @@ public class Point implements Comparable<Point> {
     @Override
     public String toString() {
         return "(" + x.toString() + ", " + y.toString() + ")";
+    }
+
+
+    /**
+     * Determines if a <code>Point</code> is between two others. Creates a bounding box with <code>Points</code>
+     * <code>boundsA</code> and <code>boundsB</code> as the two opposite corners, and checks to see if <code>point</code> lies
+     * within said bounding box.
+     *
+     * @param boundsA First <code>Point</code> of the bounding box
+     * @param boundsB Second <code>Point</code> of the bounding box
+     * @param point <code>Point</code> to check
+     * @return <code>true</code> if <code>point</code> is within the bounding box, <code>false</code> otherwise
+     */
+    public static boolean inBounds(Point boundsA, Point boundsB, Point point) {
+        return
+                   ( point.x.doubleValue() >= Math.min(boundsA.x.doubleValue(), boundsB.x.doubleValue()) - EPSILON )
+                && ( point.x.doubleValue() <= Math.max(boundsA.x.doubleValue(), boundsB.x.doubleValue()) + EPSILON )
+                && ( point.y.doubleValue() >= Math.min(boundsA.y.doubleValue(), boundsB.y.doubleValue()) - EPSILON)
+                && ( point.y.doubleValue() <= Math.max(boundsA.y.doubleValue(), boundsB.y.doubleValue()) + EPSILON );
+    }
+
+    /**
+     * An enum representing the orientation of a triplet of <code>Points</code>. Colinear means the points fall in a
+     * line.
+     */
+    enum Orientation {
+        CLOCKWISE,
+        COUNTER_CLOCKWISE,
+        COLINEAR
+    }
+
+    /**
+     * Determines the <code>Orientation</code> of a triplet of <code>Points</code>.
+     *
+     * @param p First <code>Point</code>
+     * @param q Second <code>Point</code>
+     * @param r Third <code>Point</code>
+     * @return <code>Orientation</code> enum based on the given <code>Points'</code> positions.
+     */
+    public static Orientation orientation(Point p, Point q, Point r) {
+        double val = (q.y.doubleValue() - p.y.doubleValue()) * (r.x.doubleValue() - q.x.doubleValue()) -
+                     (q.x.doubleValue() - p.x.doubleValue()) * (r.y.doubleValue() - q.y.doubleValue());
+        if(Math.abs(val) < EPSILON) return Orientation.COLINEAR;
+        else return val > 0.0 ? Orientation.CLOCKWISE : Orientation.COUNTER_CLOCKWISE;
+    }
+
+    /**
+     * Determines if two lines intersect each other. Calculates if two lines, given by <code>p1q1</code> and
+     * <code>p2q2</code> intersect each other.
+     *
+     * @param p1 First <code>Point</code> of line 1
+     * @param q1 Second <code>Point</code> of line 1
+     * @param p2 First <code>Point</code> of line 2
+     * @param q2 Second <code>Point</code> of line 2
+     * @return <code>true</code> if the two lines intersect, <code>false</code> otherwise
+     */
+    public static boolean lineIntersect(Point p1, Point q1, Point p2, Point q2) {
+
+        // Find the four Orientations needed for calculations
+        Orientation o1 = orientation(p1, q1, p2);
+        Orientation o2 = orientation(p1, q1, q2);
+        Orientation o3 = orientation(p2, q2, p1);
+        Orientation o4 = orientation(p2, q2, q1);
+
+        // General Case
+        if( o1 != o2 && o3 != o4 )
+            return true;
+
+        // p1, q1, and p2 are colinear and p2 is between points p1 and q1
+        if( o1 == Orientation.COLINEAR && inBounds(p1, q1, p2))
+            return true;
+
+        // p1, q1, and q2 are colinear and q2 is between points p1 and q1
+        if( o2 == Orientation.COLINEAR && inBounds(p1, q1, q2))
+            return true;
+
+        // p2, q2, and p1 are colinear and p1 is between points p2 and q2
+        if( o3 == Orientation.COLINEAR && inBounds(p2, q2, p1))
+            return true;
+
+        // p2, q2, and q1 are colinear and q1 is between points p2 and q2
+        if( o4 == Orientation.COLINEAR && inBounds(p2, q2, q1))
+            return true;
+
+        return false;
     }
 
 }

@@ -19,6 +19,11 @@ public class PointTest {
     Point double2 = new Point(999.999, -333.333);
     Point double3 = new Point(42.42, -4.0);
 
+    Point rect1 = new Point(-10, -10);
+    Point rect2 = new Point(-8, 10);
+    Point rect3 = new Point(10, 10);
+    Point rect4 = new Point(8, -10);
+
 
     @Test
     public void testEqualsInt() {
@@ -107,5 +112,33 @@ public class PointTest {
         assertEquals(new Point(25, 250), a.divide(b));
         Point c = new Point(-10, -10);
         assertEquals(new Point(-10, -100), a.divide(c));
+    }
+
+    @Test
+    public void bounds() {
+        assertFalse(Point.inBounds(rect1, rect2, rect3));
+        assertFalse(Point.inBounds(rect1, rect2, rect4));
+        assertTrue(Point.inBounds(rect1, rect3, rect2));
+        assertTrue(Point.inBounds(rect1, rect3, rect4));
+        assertFalse(Point.inBounds(rect1, rect2, new Point()));
+        assertTrue(Point.inBounds(rect1, rect3, new Point()));
+    }
+
+    @Test
+    public void orientation() {
+        assertEquals(Point.Orientation.CLOCKWISE, Point.orientation(rect1, rect2, rect3));
+        assertEquals(Point.Orientation.CLOCKWISE, Point.orientation(rect3, rect4, rect1));
+        assertEquals(Point.Orientation.COUNTER_CLOCKWISE, Point.orientation(rect2, rect1, rect4));
+        assertEquals(Point.Orientation.COUNTER_CLOCKWISE, Point.orientation(rect4, rect3, rect2));
+        assertEquals(Point.Orientation.COLINEAR, Point.orientation(rect1, new Point(), rect3));
+        assertEquals(Point.Orientation.COLINEAR, Point.orientation(rect2, new Point(), rect4));
+    }
+
+    @Test
+    public void intersect() {
+        assertFalse(Point.lineIntersect(rect1, rect2, rect3, rect4));
+        assertFalse(Point.lineIntersect(rect3, rect2, rect1, rect4));
+        assertTrue(Point.lineIntersect(rect1, rect3, rect2, rect4));
+        assertTrue(Point.lineIntersect(rect1, new Point(), rect2, new Point()));
     }
 }
