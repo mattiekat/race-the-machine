@@ -9,9 +9,8 @@ import java.util.function.Function;
  * Take a look at https://en.wikipedia.org/wiki/Activation_function for more information.
  */
 public enum ActivationFunction {
-    SIGMOID((Float input) -> {
-        return 1.0f / (1.0f + exp(-input));
-    });
+    SIGMOID( (Float x) -> (1.0f / (1.0f + exp(-x))) ),
+    LINEAR( (Float x) -> x );
 
 
     private final Function<Float, Float> function;
@@ -37,7 +36,7 @@ public enum ActivationFunction {
 
 
     /**
-     * Approximation of the e^x function.
+     * Approximation of the e^x function. Accurate to within 1e-3;
      * @return an approximation of e^x.
      */
     private static float exp(float x) {
