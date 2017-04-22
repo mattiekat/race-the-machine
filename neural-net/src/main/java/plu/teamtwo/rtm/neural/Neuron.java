@@ -1,20 +1,19 @@
 package plu.teamtwo.rtm.neural;
 
-import java.util.Collection;
 import java.util.LinkedList;
 
 class Neuron {
     final int id;
     final LinkedList<Dendrite> connections = new LinkedList<>();
-    final FunctionType function;
+    final ActivationFunction function;
 
     private float input = 0.0f;
     private float output = 0.0f;
 
 
-    Neuron(int id, FunctionType functionType) {
+    Neuron(int id, ActivationFunction activationFunction) {
         this.id = id;
-        function = functionType;
+        function = activationFunction;
     }
 
 
