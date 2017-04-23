@@ -1,4 +1,4 @@
-package neat;
+package plu.teamtwo.rtm.neat;
 
 /**
  * Created by hannah on 4/21/17.

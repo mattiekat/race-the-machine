@@ -1,4 +1,4 @@
-package neat;
+package plu.teamtwo.rtm.neat;
 
 import java.util.LinkedList;
 import java.util.Random;
