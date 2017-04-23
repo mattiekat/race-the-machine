@@ -62,7 +62,7 @@ public class NeuralNetwork {
                 return false;
 
         //add the neuron
-        neurons[id] = new Neuron(id, activationFunction);
+        neurons[id] = new Neuron(activationFunction);
         neurons[id].connections.addAll(connections);
         return true;
     }
