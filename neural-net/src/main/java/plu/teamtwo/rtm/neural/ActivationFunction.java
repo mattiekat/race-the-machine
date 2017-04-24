@@ -9,8 +9,15 @@ import java.util.function.Function;
  * Take a look at https://en.wikipedia.org/wiki/Activation_function for more information.
  */
 public enum ActivationFunction {
-    SIGMOID( (Float x) -> (1.0f / (1.0f + exp(-x))) ),
-    LINEAR( (Float x) -> x );
+    ABS(        (Float x) -> x >= 0 ? x : -x                                ),
+    GAUSSIAN(   (Float x) -> (float)Math.exp( -(x * x) )                    ),
+    LINEAR(     (Float x) -> x                                              ),
+    SIGMOID(    (Float x) -> (1.0f / (1.0f + (float)Math.exp(-x)))          ),
+    SINC(       (Float x) -> (float)Math.sin(x) / x                         ),
+    SINUSOID(   (Float x) -> (float)Math.sin(x)                             ),
+    SOFTPLUS(   (Float x) -> (float)Math.log1p(Math.exp(x))                 ),
+    SYMETRIC(   (Float x) -> (x >= 0 ? -x : x) + 1                          ),
+    TANH(       (Float x) -> (float)Math.tanh(x)                            );
 
 
     private final Function<Float, Float> function;
@@ -32,18 +39,5 @@ public enum ActivationFunction {
      */
     float calculate(float x) {
         return function.apply(x);
-    }
-
-
-    /**
-     * Approximation of the e^x function. Accurate to within 1e-3;
-     * @return an approximation of e^x.
-     */
-    private static float exp(float x) {
-        //http://www.javamex.com/tutorials/math/exp.shtml
-        x = 1.0f + x / 256.0f;
-        x *= x; x *= x; x *= x; x *= x;
-        x *= x; x *= x; x *= x; x *= x;
-        return x;
     }
 }
