@@ -7,7 +7,8 @@ import java.util.LinkedList;
  * This represents a Neuron in the ANN. It is used to calculate values and store results.
  */
 class Neuron {
-    final LinkedList<Dendrite> connections = new LinkedList<>();
+    final LinkedList<Dendrite> outputs = new LinkedList<>();
+    final LinkedList<Dendrite> inputs = new LinkedList<>();
     final ActivationFunction function;
 
     private float input = 0.0f;

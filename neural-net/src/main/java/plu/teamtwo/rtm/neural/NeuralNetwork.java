@@ -1,10 +1,7 @@
 package plu.teamtwo.rtm.neural;
 
 import java.security.InvalidParameterException;
-import java.util.BitSet;
-import java.util.Collection;
-import java.util.LinkedList;
-import java.util.Queue;
+import java.util.*;
 
 /**
  * This is an ANN which can be run on inputs and then will provide outputs based on that.
@@ -44,7 +41,7 @@ public class NeuralNetwork {
 
 
     /**
-     * Set the value and connections for a neuron. This will need to happen for every neuron before the ANN can be used.
+     * Set the value and outputs for a neuron. This will need to happen for every neuron before the ANN can be used.
      * @param id ID of the neuron to be set. Inputs are the lowest values, outputs follow, and then hidden are at the end.
      * @param connections IDs of neurons that this one connects to.
      * @param activationFunction The activation function that should be used for this neuron.
@@ -63,21 +60,46 @@ public class NeuralNetwork {
 
         //add the neuron
         neurons[id] = new Neuron(activationFunction);
-        neurons[id].connections.addAll(connections);
+        neurons[id].outputs.addAll(connections);
         return true;
     }
 
 
     /**
-     * Finalize the ANN state. This will enable running calculations if it succeeds.
+     * Finalize the ANN state. This will enable running calculations if it succeeds. This will basically calculate other
+     * index values or cache information which can then be used to speed up the execution of the ANN.
      * @return True if it was successfully validated, false otherwise.
      */
     public boolean validate() {
         if(validated) return true;
 
-        for(int i = 0; i < neurons.length; ++i)
-            if(neurons[i] == null) return false;
+        //validate the values
+        for(Neuron n : neurons) {
+            //make sure it is set
+            if(n == null) return false;
+            //make sure the connections are valid
+            for(Dendrite d : n.outputs)
+                if(d.to < 0 || d.to > neurons.length)
+                    return false;
+        }
 
+        //construct the backreferences
+        for(int i = 0; i < neurons.length; ++i) {
+            final Neuron n = neurons[i];
+            for(Dendrite d : n.outputs)
+                //create a new input from the node it goes to pointing back to this one
+                neurons[d.to].inputs.add(new Dendrite(i, d.weight));
+        }
+
+        //Sort the connections in the lists
+        final Comparator<Dendrite> comparator =
+                (Dendrite a, Dendrite b) -> (a.to - b.to);
+        for(Neuron n : neurons) {
+            n.inputs.sort(comparator);
+            n.outputs.sort(comparator);
+        }
+
+        //we are done
         validated = true;
         return true;
     }
@@ -87,9 +109,11 @@ public class NeuralNetwork {
      * Runs the neural network on a set of inputs and provides the resulting outputs. This will do a full run through
      * the network taking the inputs values all the way to the output neurons.
      * @param inputs Array of values to set the input neurons to.
+     * @param step Set this to true if you want values to more slowly propagate through the network. Normal behavior
+     *             would be when stepping is disabled.
      * @return Array of values from the output neurons.
      */
-    public float[] calculate(float[] inputs) {
+    public float[] calculate(float[] inputs, boolean step) {
         if(!validated)
             throw new IllegalStateException("Cannot run the ANN without being validated");
         if(inputs.length != inputNeurons)
@@ -102,7 +126,10 @@ public class NeuralNetwork {
         //create work queue and visited information
         Queue<Integer> queue = new LinkedList<>();
         BitSet visited = new BitSet(neurons.length);
-        for(int i = 0; i < inputNeurons; ++i)
+
+        if(step) for(int i = inputNeurons; i < outputNeurons; ++i)
+            queue.add(i);
+        else for(int i = 0; i < inputNeurons; ++i)
             queue.add(i);
 
         while(!queue.isEmpty()) {
@@ -116,12 +143,13 @@ public class NeuralNetwork {
             final float value = neuron.calculate();
 
             //input the value to all connected neurons and add them to the work queue
-            for(Dendrite d : neuron.connections) {
+            for(Dendrite d : neuron.outputs)
                 neurons[d.to].inputValue(value * d.weight);
 
+            //if we are stepping, then go through inputs, otherwise go though outputs and add to queue
+            for(Dendrite d : (step ? neuron.inputs : neuron.outputs))
                 if(!visited.get(d.to))
                     queue.add(d.to);
-            }
         }
 
         //read values at output neurons
