@@ -1,15 +1,16 @@
 package plu.teamtwo.rtm.neat;
 
-/**
- * Created by hannah on 4/20/17.
- */
-public interface Genome {
+import plu.teamtwo.rtm.neural.NeuralNetwork;
 
-    public abstract void getANN();
+import java.io.Serializable;
+
+public interface Genome extends Serializable {
+
+    public abstract NeuralNetwork getANN();
 
     public abstract void cross();
 
     public abstract void mutation();
 
-    public abstract void serialization();
+
 }

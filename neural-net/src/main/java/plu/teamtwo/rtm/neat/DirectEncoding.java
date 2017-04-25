@@ -1,11 +1,11 @@
 package plu.teamtwo.rtm.neat;
 
-import java.util.LinkedList;
-import java.util.Random;
+import plu.teamtwo.rtm.neural.NeuralNetwork;
 
-/**
- * Created by hannah on 4/20/17.
- */
+import java.util.*;
+import java.util.function.Consumer;
+import java.util.function.Function;
+
 public class DirectEncoding implements Genome {
 
     private LinkedList<Node> nodeGenes;
@@ -15,8 +15,6 @@ public class DirectEncoding implements Genome {
     private final float MUTATE_EDGE = 0.02f;
     private final float MUTATE_NODE = 0.01f;
     private final float MUTATE_ENABLER = 0.03f;
-    private float weight;
-    private boolean nodeEnabled;
     private int innovationNum = 0;
     private int nodeIDs = 0;
 
@@ -26,8 +24,52 @@ public class DirectEncoding implements Genome {
     }
 
     @Override
-    public void getANN() {
-        //can't do yet
+    public NeuralNetwork getANN() {
+        //create lists of each type of node
+        List<Node> inputs  = new ArrayList<>(),
+                   outputs = new ArrayList<>(),
+                   hidden  = new ArrayList<>();
+
+        //create a list of enabled edges
+        List<Edge> edges = new LinkedList<Edge>();
+
+        //create a
+        for(Node n : nodeGenes) {
+            switch(n.nodeType) {
+                case INPUT:  inputs.add(n);  break;
+                case OUTPUT: outputs.add(n); break;
+                case HIDDEN: hidden.add(n);  break;
+            }
+        }
+
+        //add all the connections to a list
+        for(Edge e : edgeGenes)
+            if(e.enabled)
+                edges.add(e);
+
+        //TODO: remove any hidden nodes that do not have a connection to the outputs
+        // Invert directions and then perform DFS/BFS from exits and see what nodes are discovered
+
+        //construct a neural network now that we know the sizes
+        NeuralNetwork net = new NeuralNetwork(inputs.size(), outputs.size(), hidden.size());
+
+        //set the activation functions (not needed presently)
+        /*{
+            int i = 0;
+            for(Node n : inputs)
+                net.setFunction(i++, n.function)
+            for(Node n : outputs)
+                net.setFunction(i++, n.function)
+            for(Node n : hidden)
+                net.setFunction(i++, n.function)
+        }*/
+
+        //TODO: make sure there are not duplicate edges making their way into the system
+        //create the connections
+        for(Edge e : edges)
+            net.connect(e.fromNode, e.toNode, e.weight);
+
+        return net;
     }
 
     @Override
@@ -116,11 +158,6 @@ public class DirectEncoding implements Genome {
         return rand.nextInt() * (max -min) + min;
     }
 
-    @Override
-    public void serialization() {
-        //don't worry yet
-
-    }
 
     /**
      * initialize it to empty--serialization stuff, new linked list
