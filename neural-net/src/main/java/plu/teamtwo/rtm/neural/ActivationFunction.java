@@ -4,7 +4,7 @@ import java.util.function.Function;
 
 /**
  * This defines a function used for activation on a Neuron. Each value has with it associated a function which is able
- * to calculate the value when called.
+ * connection calculate the value when called.
  *
  * Take a look at https://en.wikipedia.org/wiki/Activation_function for more information.
  */
@@ -16,7 +16,7 @@ public enum ActivationFunction {
     SINC(       (Float x) -> (float)Math.sin(x) / x                         ),
     SINUSOID(   (Float x) -> (float)Math.sin(x)                             ),
     SOFTPLUS(   (Float x) -> (float)Math.log1p(Math.exp(x))                 ),
-    SYMETRIC(   (Float x) -> (x >= 0 ? -x : x) + 1                          ),
+    SYMETRIC(   (Float x) -> (x >= 0 ? -x : x) + 1.0f                       ),
     TANH(       (Float x) -> (float)Math.tanh(x)                            );
 
 
@@ -25,7 +25,7 @@ public enum ActivationFunction {
 
     /**
      * Constructor which sets the function of this specific type.
-     * @param fn The function to use for activation.
+     * @param fn The function connection use for activation.
      */
     ActivationFunction(Function<Float, Float> fn) {
         function = fn;

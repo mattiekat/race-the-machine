@@ -2,6 +2,7 @@ package plu.teamtwo.rtm.neural;
 
 import org.junit.Test;
 
+import java.awt.*;
 import java.util.LinkedList;
 
 import static org.junit.Assert.assertEquals;
@@ -19,26 +20,27 @@ public class NeuralNetworkTest {
         //1 -> 3
 
         NeuralNetwork net = new NeuralNetwork(2, 2, 0);
-        LinkedList<Dendrite> dendrites = new LinkedList<>();
 
-        dendrites.add(new Dendrite(2, -2));
-        assertTrue( net.setNeuron(0, dendrites, ActivationFunction.LINEAR) );
+        for(int i = 0; i < 4; ++i)
+            if(i != 1) assertTrue( net.setFunction(i, ActivationFunction.LINEAR) );
 
-        dendrites.clear(); dendrites.add(new Dendrite(3, 1));
-        assertTrue( net.setNeuron(1, dendrites, ActivationFunction.SIGMOID) );
-
-        assertFalse( net.validate() );
-
-        dendrites.clear();
-        assertTrue( net.setNeuron(2, dendrites, ActivationFunction.LINEAR) );
-        assertTrue( net.setNeuron(3, dendrites, ActivationFunction.LINEAR) );
+        assertTrue( net.addConnection(0, 2, -2) );
+        assertTrue( net.addConnection(1, 3, 1) );
+        assertFalse( net.addConnection(-1, 4, 1));
+        assertFalse( net.addConnection(1, 3, 1));
 
         assertTrue( net.validate() );
 
         try {
-            net.setNeuron(0, dendrites, ActivationFunction.LINEAR);
+            net.addConnection(0, 1, 1);
             assertTrue(false);
         } catch(IllegalStateException e) {}
+
+        try {
+            net.setFunction(1, ActivationFunction.LINEAR);
+            assertTrue(false);
+        } catch(IllegalStateException e) {}
+
 
         float[] inputs = new float[]{2.0f, 3.0f};
         float[] outputs;
@@ -64,21 +66,15 @@ public class NeuralNetworkTest {
         //3 -> 2, 3
 
         NeuralNetwork net = new NeuralNetwork(2, 1, 1);
-        LinkedList<Dendrite> dendrites = new LinkedList<>();
 
-        dendrites.add(new Dendrite(3, 1));
-        assertTrue( net.setNeuron(0, dendrites, ActivationFunction.LINEAR) );
+        for(int i = 0; i < 2; ++i)
+            assertTrue( net.setFunction(i, ActivationFunction.LINEAR) );
 
-        dendrites.clear(); dendrites.add(new Dendrite(3, 1));
-        assertTrue( net.setNeuron(1, dendrites, ActivationFunction.LINEAR) );
-
-        dendrites.clear(); dendrites.add(new Dendrite(3, 1));
-        assertTrue( net.setNeuron(2, dendrites, ActivationFunction.SIGMOID) );
-
-        dendrites.clear();
-        dendrites.add(new Dendrite(2, 1));
-        dendrites.add(new Dendrite(3, 1));
-        assertTrue( net.setNeuron(3, dendrites, ActivationFunction.SIGMOID) );
+        assertTrue( net.addConnection(0, 3, 1) );
+        assertTrue( net.addConnection(1, 3, 1) );
+        assertTrue( net.addConnection(2, 3, 1) );
+        assertTrue( net.addConnection(3, 2, 1) );
+        assertTrue( net.addConnection(3, 3, 1) );
 
         assertTrue( net.validate() );
 
@@ -89,7 +85,7 @@ public class NeuralNetworkTest {
         outputs = net.calculate(inputs, false);
         outputs = net.calculate(inputs, false);
 
-        //Rather than trying to figure out what the outputs are supposed to be, just make sure it does not loop forever
+        //Rather than trying connection figure out what the outputs are supposed connection be, just make sure it does not loop forever
     }
 
     @Test
@@ -102,44 +98,27 @@ public class NeuralNetworkTest {
         //3 -> 1
 
         NeuralNetwork net = new NeuralNetwork(1, 1, 2);
-        LinkedList<Dendrite> dendrites = new LinkedList<>();
 
-        dendrites.add(new Dendrite(2, 1));
-        assertTrue( net.setNeuron(0, dendrites, ActivationFunction.LINEAR) );
+        for(int i = 0; i < 4; ++i)
+            assertTrue( net.setFunction(i, ActivationFunction.LINEAR) );
 
-        dendrites.clear();
-        assertTrue( net.setNeuron(1, dendrites, ActivationFunction.LINEAR) );
-
-        dendrites.clear(); dendrites.add(new Dendrite(3, 1));
-        assertTrue( net.setNeuron(2, dendrites, ActivationFunction.LINEAR) );
-
-        dendrites.clear(); dendrites.add(new Dendrite(1, 1));
-        assertTrue( net.setNeuron(3, dendrites, ActivationFunction.LINEAR) );
+        assertTrue( net.addConnection(0, 2, 1) );
+        assertTrue( net.addConnection(2, 3, 1) );
+        assertTrue( net.addConnection(3, 1, 1) );
+        assertTrue( net.addConnection(1, 0, 1) );
 
         assertTrue( net.validate() );
 
         float[] inputs = new float[]{1.0f};
         float[] outputs;
 
+        //feed a 1 into the system
         outputs = net.calculate(inputs, true);
         assertEquals(0, outputs[0], 1e-3);
+        inputs = new float[]{0};
 
-        inputs = new float[]{0.0f};
-        outputs = net.calculate(inputs, true);
-        assertEquals(0, outputs[0], 1e-3);
-
-        outputs = net.calculate(inputs, true);
-        assertEquals(0, outputs[0], 1e-3);
-
-        outputs = net.calculate(inputs, true);
-        assertEquals(1, outputs[0], 1e-3);
-
-        outputs = net.calculate(inputs, true);
-        assertEquals(0, outputs[0], 1e-3);
-
-        //verify that normal call does the whole thing in one calculation
-        inputs = new float[]{1.0f};
-        outputs = net.calculate(inputs, false);
-        assertEquals(1.0f, outputs[0], 1e-3);
+        for(int s = 0; s < 50; ++s)
+            //check if it alternates between 0 and 1 every third time
+            assertEquals( ((s + 1) % 3 == 0 ? 1 : 0), net.calculate(inputs, true)[0], 1e-3);
     }
 }
