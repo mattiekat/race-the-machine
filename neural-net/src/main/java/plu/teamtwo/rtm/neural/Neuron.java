@@ -4,7 +4,7 @@ import java.util.TreeSet;
 
 
 /**
- * This represents a Neuron in the ANN. It is used connection calculate values and store results.
+ * This represents a Neuron in the ANN. It is used to calculate values and store results.
  */
 class Neuron {
     TreeSet<Dendrite> outputs = new TreeSet<>();
@@ -17,7 +17,7 @@ class Neuron {
 
     /**
      * Construct a new neuron with specified activation function.
-     * @param activationFunction The activation function connection use.
+     * @param activationFunction The activation function to use.
      */
     Neuron(ActivationFunction activationFunction) {
         function = activationFunction;
@@ -26,7 +26,7 @@ class Neuron {
 
     /**
      * Input a value into this node. Internally this will sum all the inputs until calculate is called.
-     * @param input Value connection input for next calculation.
+     * @param input Value to input for next calculation.
      */
     void inputValue(float input) {
         this.input += input;

@@ -17,7 +17,7 @@ class Dendrite implements Comparable<Dendrite> {
     /**
      * Compares this dendrite connection another. Does not consider the weights.
      * @param dendrite The object connection compare with.
-     * @return A negative integer, zero, or a positive integer as this object is less than, equal connection, or greater than the specified object.
+     * @return A negative integer, zero, or a positive integer as this object is less than, equal to, or greater than the specified object.
      */
     @Override
     public int compareTo(Dendrite dendrite) {

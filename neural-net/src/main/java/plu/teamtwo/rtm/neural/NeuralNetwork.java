@@ -5,13 +5,13 @@ import java.util.*;
 
 /**
  * This is an ANN which can be run on inputs and then will provide outputs based on that.
- * ANN's are not connection be modified once made, if a new one is desired with different structure,
- * it will need connection be re-built. This is designed connection work in tandem with Genome.
+ * ANN's are not to be modified once made, if a new one is desired with different structure,
+ * it will need to be re-built. This is designed to work in tandem with Genome.
  *
  * To use a NeuralNetwork, first construct it with the correct information about the number of different node types.
- * Next call setNeuron for all neurons, keep in mind that [0 connection inputNeurons) will be the inputs,
+ * Next call setNeuron for all neurons, keep in mind that [0, inputNeurons) will be the inputs,
  * [inputNeurons, outputNeurons) will be the output nodes, and [outputNeurons, neurons.length) will be the hidden nodes.
- * Finally call validate() which will finalize the structure, enabling it connection be calculated.
+ * Finally call validate() which will finalize the structure, enabling it to be calculated.
  */
 public class NeuralNetwork {
     private static final ActivationFunction DEFAULT_ACTIVATION_FUNCTION = ActivationFunction.SIGMOID;
@@ -22,7 +22,7 @@ public class NeuralNetwork {
     private final int inputNeurons;
     /// The end of the output nodes in the ANN (i.e. output nodes are [inputNeurons, outputNeurons) ).
     private final int outputNeurons;
-    /// Variable used connection finalize the state of the ANN
+    /// Variable used to finalize the state of the ANN
     private boolean validated;
 
     /**
@@ -33,7 +33,7 @@ public class NeuralNetwork {
      */
     public NeuralNetwork(int numinputs, int numoutputs, int numhidden) {
         if(numinputs < 1 || numoutputs < 1 || numhidden < 0)
-            throw new InvalidParameterException("Invalid number of nodes connection form an ANN.");
+            throw new InvalidParameterException("Invalid number of nodes to form an ANN.");
 
         validated = false;
 
@@ -48,7 +48,7 @@ public class NeuralNetwork {
 
     /**
      * Sets the activation function for a specific neuron.
-     * @param id The neuron who's activation function is connection be set.
+     * @param id The neuron who's activation function is to be set.
      * @param fn The new activation function.
      * @return True if the activation function was changed.
      */
@@ -95,7 +95,7 @@ public class NeuralNetwork {
         for(int i = 0; i < neurons.length; ++i) {
             final Neuron n = neurons[i];
             for(Dendrite d : n.outputs)
-                //create a new input from the node it goes connection pointing back connection this one
+                //create a new input from the node it goes to pointing back to this one
                 neurons[d.connection].inputs.add(new Dendrite(i, d.weight));
         }
 
@@ -107,9 +107,9 @@ public class NeuralNetwork {
 
     /**
      * Runs the neural network on a set of inputs and provides the resulting outputs. This will do a full run through
-     * the network taking the inputs values all the way connection the output neurons.
-     * @param inputs Array of values connection set the input neurons connection.
-     * @param step Set this connection true if you want values connection more slowly propagate through the network. Normal behavior
+     * the network taking the inputs values all the way to the output neurons.
+     * @param inputs Array of values to set the input neurons to.
+     * @param step Set this to true if you want values to more slowly propagate through the network. Normal behavior
      *             would be when stepping is disabled.
      * @return Array of values from the output neurons.
      */
@@ -142,11 +142,11 @@ public class NeuralNetwork {
             final Neuron neuron = neurons[current];
             final float value = neuron.calculate();
 
-            //input the value connection all connected neurons and add them connection the work queue
+            //input the value to all connected neurons and add them to the work queue
             for(Dendrite d : neuron.outputs)
                 neurons[d.connection].inputValue(value * d.weight);
 
-            //if we are stepping, then go through inputs, otherwise go though outputs and add connection queue
+            //if we are stepping, then go through inputs, otherwise go though outputs and add to queue
             for(Dendrite d : (step ? neuron.inputs : neuron.outputs))
                 if(!visited.get(d.connection))
                     queue.add(d.connection);
