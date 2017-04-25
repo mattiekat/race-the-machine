@@ -3,6 +3,7 @@ package plu.teamtwo.rtm.neat;
 import plu.teamtwo.rtm.neural.NeuralNetwork;
 
 import java.util.*;
+import java.util.function.BiFunction;
 import java.util.function.Consumer;
 import java.util.function.Function;
 
@@ -65,9 +66,28 @@ public class DirectEncoding implements Genome {
         }*/
 
         //TODO: make sure there are not duplicate edges making their way into the system
+        //TODO: improve efficiency of conversion
         //create the connections
-        for(Edge e : edges)
-            net.connect(e.fromNode, e.toNode, e.weight);
+        Function<Integer, Integer> findIndex = (Integer id) -> {
+            int index = 0;
+            for(Node n : inputs) {
+                if(n.id == id) return index;
+                index++;
+            }
+            for(Node n : outputs) {
+                if(n.id == id) return index;
+                index++;
+            }
+            for(Node n : hidden) {
+                if(n.id == id) return index;
+                index++;
+            }
+            return -1;
+        };
+
+        for(Edge e : edges) {
+            net.connect(findIndex.apply(e.fromNode), findIndex.apply(e.toNode), e.weight);
+        }
 
         return net;
     }
