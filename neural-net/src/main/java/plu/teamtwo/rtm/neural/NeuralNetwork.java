@@ -71,7 +71,7 @@ public class NeuralNetwork {
      * @param weight Weight of the connection.
      * @return True if a connection was added.
      */
-    public boolean addConnection(int from, int to, float weight) {
+    public boolean connect(int from, int to, float weight) {
         if(validated)
             throw new IllegalStateException("Cannot modify Neurons once the ANN has been validated.");
 

@@ -2,9 +2,6 @@ package plu.teamtwo.rtm.neural;
 
 import org.junit.Test;
 
-import java.awt.*;
-import java.util.LinkedList;
-
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
@@ -24,15 +21,15 @@ public class NeuralNetworkTest {
         for(int i = 0; i < 4; ++i)
             if(i != 1) assertTrue( net.setFunction(i, ActivationFunction.LINEAR) );
 
-        assertTrue( net.addConnection(0, 2, -2) );
-        assertTrue( net.addConnection(1, 3, 1) );
-        assertFalse( net.addConnection(-1, 4, 1));
-        assertFalse( net.addConnection(1, 3, 1));
+        assertTrue( net.connect(0, 2, -2) );
+        assertTrue( net.connect(1, 3, 1) );
+        assertFalse( net.connect(-1, 4, 1));
+        assertFalse( net.connect(1, 3, 1));
 
         assertTrue( net.validate() );
 
         try {
-            net.addConnection(0, 1, 1);
+            net.connect(0, 1, 1);
             assertTrue(false);
         } catch(IllegalStateException e) {}
 
@@ -70,11 +67,11 @@ public class NeuralNetworkTest {
         for(int i = 0; i < 2; ++i)
             assertTrue( net.setFunction(i, ActivationFunction.LINEAR) );
 
-        assertTrue( net.addConnection(0, 3, 1) );
-        assertTrue( net.addConnection(1, 3, 1) );
-        assertTrue( net.addConnection(2, 3, 1) );
-        assertTrue( net.addConnection(3, 2, 1) );
-        assertTrue( net.addConnection(3, 3, 1) );
+        assertTrue( net.connect(0, 3, 1) );
+        assertTrue( net.connect(1, 3, 1) );
+        assertTrue( net.connect(2, 3, 1) );
+        assertTrue( net.connect(3, 2, 1) );
+        assertTrue( net.connect(3, 3, 1) );
 
         assertTrue( net.validate() );
 
@@ -102,10 +99,10 @@ public class NeuralNetworkTest {
         for(int i = 0; i < 4; ++i)
             assertTrue( net.setFunction(i, ActivationFunction.LINEAR) );
 
-        assertTrue( net.addConnection(0, 2, 1) );
-        assertTrue( net.addConnection(2, 3, 1) );
-        assertTrue( net.addConnection(3, 1, 1) );
-        assertTrue( net.addConnection(1, 0, 1) );
+        assertTrue( net.connect(0, 2, 1) );
+        assertTrue( net.connect(2, 3, 1) );
+        assertTrue( net.connect(3, 1, 1) );
+        assertTrue( net.connect(1, 0, 1) );
 
         assertTrue( net.validate() );
 
