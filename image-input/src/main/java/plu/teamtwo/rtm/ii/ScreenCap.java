@@ -12,6 +12,7 @@ public class ScreenCap {
 
     private final Robot robot;
     private final Rectangle area;
+    private final GraphicsDevice screen;
 
     /**
      * Full Constructor. Creates a <code>ScreenCap</code> object around a given area on a specified <code>screen</code>.
@@ -26,6 +27,7 @@ public class ScreenCap {
         try { robot = new Robot(screen); }
         catch(AWTException ex) { throw new RuntimeException(ex.getMessage()); }
         area = new Rectangle(x, y, width, height);
+        this.screen = screen;
     }
 
     /**
@@ -40,6 +42,8 @@ public class ScreenCap {
         try { robot = new Robot(); }
         catch(AWTException ex) { throw new RuntimeException(ex.getMessage()); }
         area = new Rectangle(x, y, width, height);
+        this.screen = GraphicsEnvironment.getLocalGraphicsEnvironment()
+                .getDefaultScreenDevice();
     }
 
     /**
@@ -52,6 +56,7 @@ public class ScreenCap {
         catch(AWTException ex) { throw new RuntimeException(ex.getMessage()); }
         Dimension dim = Toolkit.getDefaultToolkit().getScreenSize();
         area = new Rectangle(0, 0, dim.width, dim.height);
+        this.screen = screen;
     }
 
     /**
@@ -62,6 +67,8 @@ public class ScreenCap {
         catch(AWTException ex) { throw new RuntimeException(ex.getMessage()); }
         Dimension dim = Toolkit.getDefaultToolkit().getScreenSize();
         area = new Rectangle(0, 0, dim.width, dim.height);
+        this.screen = GraphicsEnvironment.getLocalGraphicsEnvironment()
+                .getDefaultScreenDevice();
     }
 
     /**
@@ -73,4 +80,20 @@ public class ScreenCap {
     public BufferedImage capture() {
         return robot.createScreenCapture(area);
     }
+
+    /**
+     * Screen Getter. Retrieves the <code>GraphicsDevice</code> representing the screen this <code>ScreenCap</code>
+     * object is capturing from.
+     *
+     * @return <code>GraphicsDevice screen</code>
+     */
+    public GraphicsDevice getScreen() { return screen; }
+
+    /**
+     * Area Getter. Retrieves a <code>Rectangle</code> representing the area of the screen this <code>ScreenCap</code>
+     * object is capturing from.
+     *
+     * @return <code>Rectangle area</code>
+     */
+    public Rectangle getArea() { return area; }
 }

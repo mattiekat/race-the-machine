@@ -10,5 +10,6 @@ repositories {
 }
 
 dependencies {
+    compile project(':image-input')
     testCompile group: 'junit', name: 'junit', version: '4.11'
 }
