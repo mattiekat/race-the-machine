@@ -30,6 +30,7 @@ public class Main {
         mc5.setTo(new Scalar(5));
         System.out.println("OpenCV Mat data:\n" + m.dump());
 
+        /*
         ScreenCap sc = new ScreenCap(0, 0, 1280, 720);
 
         int[] counts = new int[10];
@@ -55,5 +56,6 @@ public class Main {
             tc += counts[i];
         }
         System.out.println("\nAverage Count: "+(tc/10));
+        */
     }
 }

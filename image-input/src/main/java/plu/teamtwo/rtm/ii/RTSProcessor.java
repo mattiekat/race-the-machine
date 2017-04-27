@@ -1,5 +1,10 @@
 package plu.teamtwo.rtm.ii;
 
+import org.opencv.core.Core;
+import org.opencv.core.Mat;
+import org.opencv.core.Size;
+import org.opencv.imgproc.Imgproc;
+
 import java.awt.*;
 import java.awt.image.BufferedImage;
 import java.util.HashSet;
@@ -9,6 +14,8 @@ import java.util.concurrent.ConcurrentLinkedQueue;
  * Created by MajorSlime on 4/26/2017.
  */
 public class RTSProcessor {
+
+    public static void init() { System.loadLibrary(Core.NATIVE_LIBRARY_NAME); }
 
     private Runner runner = null;
 
@@ -95,9 +102,12 @@ public class RTSProcessor {
             int count = 0;
             long current_time = System.currentTimeMillis();
             while(running) {
+                BufferedImage cap;
                 synchronized(capSwitchLock) {
-                    cap_queue.offer(capper.capture());
+                    cap = capper.capture();
                 }
+                //cap_queue.offer(cap);
+                cap_queue.offer(processImg(cap));
                 if(cap_queue.size() > 300) cap_queue.poll();
                 count++;
                 long new_time = System.currentTimeMillis();
@@ -115,6 +125,20 @@ public class RTSProcessor {
                         listener.frameProcessed();
                 }
             }
+        }
+
+        private BufferedImage processImg(BufferedImage img) {
+            Mat frame = Util.bufferedImageToMat(img);
+            Mat gray = new Mat();
+            Mat edges = new Mat();
+
+            Imgproc.cvtColor(frame, gray, Imgproc.COLOR_BGR2GRAY);
+            Imgproc.blur(gray, edges, new Size(3, 3));
+            Imgproc.Canny(edges, edges, 12, 12*3);
+
+            Mat dest = new Mat();
+            edges.copyTo(dest);
+            return Util.matToBufferedImage(dest);
         }
     }
 
