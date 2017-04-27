@@ -7,7 +7,7 @@ import java.io.Serializable;
 public interface Genome extends Serializable {
     public abstract Genome duplicate();
 
-    public abstract void mutate();
+    public abstract void mutate(GenomeMutations mutations);
 
     public abstract Genome cross(Genome other);
 
