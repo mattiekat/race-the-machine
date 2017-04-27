@@ -1,17 +1,26 @@
 package plu.teamtwo.rtm.neat;
 
-/**
- * Created by hannah on 4/20/17.
- */
 public class Node extends DirectEncoding {
-
-    public int id;
+    public final int id;
     public NodeType nodeType;
    // public NodeType functionType;
 
-    public Node(){}
+    private static int nextNodeID = 0;
 
-    public Node(int id, NodeType nodeType){
+
+    public Node(Node other) {
+        this(other.id, other.nodeType);
+    }
+
+
+    public Node(NodeType nodeType) {
+        this(nextNodeID, nodeType);
+    }
+
+
+    private Node(int id, NodeType nodeType){
+        nextNodeID = Math.max(id + 1, nextNodeID);
+
         this.id = id;
         this.nodeType = nodeType;
     }
