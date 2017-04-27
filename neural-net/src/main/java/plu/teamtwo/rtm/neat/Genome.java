@@ -11,6 +11,8 @@ public interface Genome extends Serializable {
 
     public abstract Genome cross(Genome other);
 
+    public abstract float compatibilityDistance(Genome other);
+
     public abstract NeuralNetwork getANN();
 
 

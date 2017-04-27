@@ -47,7 +47,14 @@ public class DirectEncoding implements Genome {
 
 
     @Override
-    public Genome duplicate() {
+    public float compatibilityDistance(Genome gOther) {
+        DirectEncoding other = (DirectEncoding)gOther;
+        return 0;
+    }
+
+
+    @Override
+    public DirectEncoding duplicate() {
         return new DirectEncoding(this);
     }
 
@@ -58,13 +65,12 @@ public class DirectEncoding implements Genome {
 
         //TODO: allow for activation function mutations?
 
-        for(Edge e: edgeGenes){
+        for(Edge e: edgeGenes)
             //alter the weight
-            if(iWill(MUTATE_WEIGHT)) {
+            if(iWill(MUTATE_WEIGHT))
                 mutateWeight(e);
-            }
-        }
 
+        //TODO: allow for multiple new edges or nodes in a single mutation round
         // add an edge
         if(iWill(MUTATE_NEW_EDGE))
             mutateNewEdge(mutations);
@@ -73,10 +79,9 @@ public class DirectEncoding implements Genome {
         if(iWill(MUTATE_NEW_NODE))
             mutateNewNode(mutations);
 
-        for(Edge e: edgeGenes){
+        for(Edge e: edgeGenes)
             if(iWill(MUTATE_EDGE_TOGGLE))
                 e.enabled = !e.enabled;
-        }
     }
 
 
@@ -92,10 +97,13 @@ public class DirectEncoding implements Genome {
         int from = getRandomNum(0, nodeGenes.size() - 1);
         int to = getRandomNum(0, nodeGenes.size() - 1);
 
-        //check if the node already exists
-        for(Edge e: edgeGenes)
-            if(e.fromNode == from && e.toNode == to)
+        //check if the node already exists, if so, then enable it and return from the function
+        for(Edge e: edgeGenes) {
+            if(e.fromNode == from && e.toNode == to) {
+                e.enabled = true;
                 return;
+            }
+        }
 
         //it does not already exist, check if it has been mutated before, if so, use same ID
         int id = mutations.getMutatedEdgeID(from, to);
@@ -138,8 +146,8 @@ public class DirectEncoding implements Genome {
     public NeuralNetwork getANN() {
         //create lists of each type of node
         List<Node> inputs  = new ArrayList<>(),
-                outputs = new ArrayList<>(),
-                hidden  = new ArrayList<>();
+                   outputs = new ArrayList<>(),
+                   hidden  = new ArrayList<>();
 
         //create a list of enabled edges
         List<Edge> edges = new LinkedList<Edge>();
