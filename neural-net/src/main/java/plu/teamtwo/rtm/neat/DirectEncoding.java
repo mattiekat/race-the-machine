@@ -9,22 +9,28 @@ public class DirectEncoding implements Genome {
     private List<Node> nodeGenes = new LinkedList<>();
     private List<Edge> edgeGenes = new LinkedList<>();
 
-    /// Chance for any given edge's weight to be mutated
+    /// Chance for any given edge's weight to be mutated.
     private static final float MUTATE_WEIGHT = 0.05f;
-    /// Chance that an edge weight which is being mutated will be reinitialized
+    /// Chance that an edge weight which is being mutated will be reinitialized.
     private static final float MUTATE_RESET_WEIGHT = 0.10f;
-    /// Chance for a new edge to be added to the system
+    /// Chance for a new edge to be added to the system.
     private static final float MUTATE_NEW_EDGE = 0.02f;
-    /// Chance for a node to be added to the system
+    /// Chance for a node to be added to the system.
     private static final float MUTATE_NEW_NODE = 0.01f;
-    /// Chance for an edge's enabled status to be flipped
+    /// Chance for an edge's enabled status to be flipped.
     private static final float MUTATE_EDGE_TOGGLE = 0.03f;
-    /// Chance to disable an edge if either parent had it disabled
+    /// Chance to disable an edge if either parent had it disabled.
     private static final float CROSS_DISABLE_EDGE = 0.75f;
-    /// Absolute value of the initial range for an edge weight
+    /// Absolute value of the initial range for an edge weight.
     private static final float EDGE_WEIGHT_INIT_RANGE = 2.0f;
-    /// Amount up or down an edge weight can be stepped
+    /// Amount up or down an edge weight can be stepped.
     private static final float EDGE_WEIGHT_STEP_MAX = 2.0f;
+    /// Cost of having excess nodes on distance function (c1).
+    private static final float DISTANCE_EXCESS_COST = 1.0f;
+    /// Cost of having disjoint nodes in distance function (c2).
+    private static final float DISTANCE_DISJOINT_COST = 1.0f;
+    /// Cost of average weight difference on matching edges (including disabled) in distance function (c3).
+    private static final float DISTANCE_WEIGHT_DIFFERENCE_COST = 0.4f;
 
     private static final Random random = new Random();
 
@@ -46,10 +52,15 @@ public class DirectEncoding implements Genome {
     }
 
 
+    /**
+     * Compute the compatibility distance function δ. The value represents how different this genome is from the other
+     * one by counting the disjoint and excess edges, and the the average difference in the weights.
+     * @param gOther The genome to compare this one against.
+     * @return The compatibility distance.
+     */
     @Override
     public float compatibilityDistance(Genome gOther) {
-        DirectEncoding other = (DirectEncoding)gOther;
-        return 0;
+        return compatibilityDistance(this, (DirectEncoding)gOther);
     }
 
 
@@ -285,6 +296,67 @@ public class DirectEncoding implements Genome {
         }
 
         return child;
+    }
+
+
+    /**
+     * Compute the compatibility distance function δ. The value represents how different the two Genomes are by counting
+     * the disjoint and excess edges, and the the average difference in the weights.
+     * @param d1 First genome.
+     * @param d2 Second genome.
+     * @return The compatibility distance.
+     */
+    public static float compatibilityDistance(DirectEncoding d1, DirectEncoding d2) {
+        //sort based on innovation number
+        Comparator<Edge> sortByInnovation = (Edge a, Edge b) -> a.id - b.id;
+        d1.edgeGenes.sort(sortByInnovation);
+        d2.edgeGenes.sort(sortByInnovation);
+
+        //go through both parents and line up innovation numbers
+        Iterator<Edge> i1 = d1.edgeGenes.iterator();
+        Iterator<Edge> i2 = d2.edgeGenes.iterator();
+
+        Edge e1 = i1.hasNext() ? i1.next() : null;
+        Edge e2 = i2.hasNext() ? i2.next() : null;
+
+        int disjoint = 0, excess = 0, matching = 0;
+        float matchingDiff = 0;
+
+        while(e1 != null || e2 != null) { //run until we hit the end of both lists
+            boolean step1 = false, step2 = false;
+            //get the next node, or null if we have reached the end.
+            if(e1 != null && e2 == null) { //e1 is an excess node
+                excess++;
+                step1 = true;
+            }
+            else if(e1 == null && e2 != null) { //e2 is an excess node
+                excess++;
+                step2 = true;
+            }
+            else if(e1.id < e2.id) { //e1 is a disjoint node
+                disjoint++;
+                step1 = true;
+            }
+            else if(e1.id == e2.id) {
+                matchingDiff += Math.abs(e1.weight - e2.weight);
+                matching++;
+                step1 = step2 = true;
+            }
+            else { // e1.id > e2.id //e2 is a disjoint node
+                disjoint++;
+                step2 = true;
+            }
+
+            if(step1) e1 = i1.hasNext() ? i1.next() : null;
+            if(step2) e2 = i2.hasNext() ? i2.next() : null;
+        }
+        matchingDiff /= (float)matching;
+
+        final float n = disjoint + excess + matching;
+        float distance = matchingDiff * DISTANCE_WEIGHT_DIFFERENCE_COST;
+        distance += ((float)excess / n) * DISTANCE_EXCESS_COST;
+        distance += ((float)disjoint / n) * DISTANCE_DISJOINT_COST;
+        return distance;
     }
 
 
