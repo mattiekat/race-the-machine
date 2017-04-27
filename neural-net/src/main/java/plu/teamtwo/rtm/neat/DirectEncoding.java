@@ -9,14 +9,14 @@ public class DirectEncoding implements Genome {
     private List<Node> nodeGenes = new LinkedList<>();
     private List<Edge> edgeGenes = new LinkedList<>();
 
-    /// Chance for any given edge's weight to be mutated.
-    private static final float MUTATE_WEIGHT = 0.05f;
+    /// Chance to mutate the edge weights.
+    private static final float MUTATE_EDGE_WEIGHTS = 0.8f;
     /// Chance that an edge weight which is being mutated will be reinitialized.
     private static final float MUTATE_RESET_WEIGHT = 0.10f;
     /// Chance for a new edge to be added to the system.
-    private static final float MUTATE_NEW_EDGE = 0.02f;
+    private static final float MUTATE_NEW_EDGE = 0.05f;
     /// Chance for a node to be added to the system.
-    private static final float MUTATE_NEW_NODE = 0.01f;
+    private static final float MUTATE_NEW_NODE = 0.03f;
     /// Chance for an edge's enabled status to be flipped.
     private static final float MUTATE_EDGE_TOGGLE = 0.03f;
     /// Chance to disable an edge if either parent had it disabled.
@@ -76,9 +76,8 @@ public class DirectEncoding implements Genome {
 
         //TODO: allow for activation function mutations?
 
-        for(Edge e: edgeGenes)
-            //alter the weight
-            if(iWill(MUTATE_WEIGHT))
+        if(iWill(MUTATE_EDGE_WEIGHTS))
+            for(Edge e: edgeGenes)
                 mutateWeight(e);
 
         //TODO: allow for multiple new edges or nodes in a single mutation round
@@ -155,6 +154,7 @@ public class DirectEncoding implements Genome {
 
     @Override
     public NeuralNetwork getANN() {
+        //TODO: use modified sigmoid function described in paper?
         //create lists of each type of node
         List<Node> inputs  = new ArrayList<>(),
                    outputs = new ArrayList<>(),
