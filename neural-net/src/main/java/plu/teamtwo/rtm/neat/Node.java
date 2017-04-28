@@ -14,12 +14,7 @@ public class Node extends DirectEncoding {
     }
 
 
-    public Node(NodeType nodeType) {
-        this(nextNodeID, nodeType);
-    }
-
-
-    Node(int id, NodeType nodeType){
+    public Node(int id, NodeType nodeType) {
         nextNodeID = Math.max(id + 1, nextNodeID);
 
         this.id = id;

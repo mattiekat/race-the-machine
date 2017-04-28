@@ -10,6 +10,7 @@ repositories {
 }
 
 dependencies {
+    compile "javax.json:javax.json-api:1.1.0-M2"
     compile project(':core')
 
     testCompile group: 'junit', name: 'junit', version: '4.11'

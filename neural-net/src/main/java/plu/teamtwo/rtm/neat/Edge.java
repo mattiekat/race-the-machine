@@ -8,23 +8,14 @@ public class Edge extends DirectEncoding {
     public int fromNode;
     public float weight;
 
-    private static int nextEdgeID = 0;
 
-
-    public Edge(Edge other){
-        this(other.id, other.toNode, other.fromNode, other.weight);
+    public Edge(Edge other) {
+        this(other.id, other.fromNode, other.toNode, other.weight);
         enabled = other.enabled;
     }
 
 
-    public Edge(int toNode, int fromNode, float weight) {
-        this(nextEdgeID, toNode, fromNode, weight);
-    }
-
-
-    Edge(int id, int toNode, int fromNode, float weight) {
-        nextEdgeID = Math.max(id + 1, nextEdgeID);
-
+    public Edge(int id, int fromNode, int toNode, float weight) {
         enabled = true;
         this.toNode = toNode;
         this.fromNode = fromNode;

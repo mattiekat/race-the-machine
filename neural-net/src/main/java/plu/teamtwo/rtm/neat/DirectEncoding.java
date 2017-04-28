@@ -2,6 +2,7 @@ package plu.teamtwo.rtm.neat;
 
 import plu.teamtwo.rtm.neural.NeuralNetwork;
 
+import java.io.OutputStream;
 import java.util.*;
 import java.util.function.Function;
 
@@ -47,8 +48,8 @@ public class DirectEncoding implements Genome {
 
 
     @Override
-    public DirectEncoding cross(Genome other) {
-        return cross(this, (DirectEncoding)other);
+    public DirectEncoding cross(GenomeCache cache, Genome other) {
+        return cross((DirectEncodingCache)cache, this, (DirectEncoding)other);
     }
 
 
@@ -70,9 +71,19 @@ public class DirectEncoding implements Genome {
     }
 
 
+    /**
+     * Used to create a new DirectEncoding Cache.
+     * @return A new DirectEncoding Cache.
+     */
     @Override
-    public void mutate(GenomeMutations gMutations) {
-        DirectEncodingMutations mutations = (DirectEncodingMutations)gMutations;
+    public GenomeCache createCache() {
+        return new DirectEncodingCache();
+    }
+
+
+    @Override
+    public void mutate(GenomeCache cache) {
+        DirectEncodingCache c = (DirectEncodingCache)cache;
 
         //TODO: allow for activation function mutations?
 
@@ -83,11 +94,11 @@ public class DirectEncoding implements Genome {
         //TODO: allow for multiple new edges or nodes in a single mutation round
         // add an edge
         if(iWill(MUTATE_NEW_EDGE))
-            mutateNewEdge(mutations);
+            mutateNewEdge(c);
 
         //add a node
         if(iWill(MUTATE_NEW_NODE))
-            mutateNewNode(mutations);
+            mutateNewNode(c);
 
         for(Edge e: edgeGenes)
             if(iWill(MUTATE_EDGE_TOGGLE))
@@ -103,7 +114,7 @@ public class DirectEncoding implements Genome {
     }
 
 
-    private void mutateNewEdge(DirectEncodingMutations mutations) {
+    private void mutateNewEdge(DirectEncodingCache cache) {
         int from = getRandomNum(0, nodeGenes.size() - 1);
         int to = getRandomNum(0, nodeGenes.size() - 1);
 
@@ -116,34 +127,34 @@ public class DirectEncoding implements Genome {
         }
 
         //it does not already exist, check if it has been mutated before, if so, use same ID
-        int id = mutations.getMutatedEdgeID(from, to);
+        int id = cache.getMutatedEdgeID(from, to);
         Edge e;
         if(id >= 0)
             e = new Edge(id, from, to, 1.0f);
         else {
-            e = new Edge(to, from, 1.0f);
-            mutations.addMutatedEdge(e.id, from, to);
+            e = new Edge(cache.getNextEdgeID(), from, to, 1.0f);
+            cache.addMutatedEdge(e.id, from, to);
         }
 
-        edgeGenes.add(new Edge(id, to, from, 1.0f));
+        edgeGenes.add(new Edge(id, from, to, 1.0f));
     }
 
 
-    private void mutateNewNode(DirectEncodingMutations mutations) {
+    private void mutateNewNode(DirectEncodingCache cache) {
         Edge oldEdge = edgeGenes.get(getRandomNum(0, edgeGenes.size() - 1));
         oldEdge.enabled = false;
 
-        int ids[] = mutations.getMutatedNodeID(oldEdge.id);
+        int ids[] = cache.getMutatedNodeID(oldEdge.id);
         Node newNode; Edge edgeTo, edgeFrom;
         if(ids == null) {
-            newNode = new Node(NodeType.HIDDEN);
-            edgeTo = new Edge(newNode.id, oldEdge.fromNode, oldEdge.weight);
-            edgeFrom = new Edge(oldEdge.toNode, newNode.id, 1);
-            mutations.addMutatedNode(newNode.id, edgeTo.id, edgeFrom.id, oldEdge.id);
+            newNode = new Node(cache.getNextNodeID(), NodeType.HIDDEN);
+            edgeTo = new Edge(cache.getNextEdgeID(), oldEdge.fromNode, newNode.id, oldEdge.weight);
+            edgeFrom = new Edge(cache.getNextEdgeID(), newNode.id, oldEdge.toNode, 1);
+            cache.addMutatedNode(newNode.id, edgeTo.id, edgeFrom.id, oldEdge.id);
         } else {
             newNode = new Node(ids[0], NodeType.HIDDEN);
-            edgeTo = new Edge(ids[1], oldEdge.fromNode, oldEdge.weight);
-            edgeFrom = new Edge(ids[2], oldEdge.toNode, newNode.id, 1);
+            edgeTo = new Edge(ids[1], oldEdge.fromNode, newNode.id, oldEdge.weight);
+            edgeFrom = new Edge(ids[2], newNode.id, oldEdge.toNode, 1);
         }
 
         nodeGenes.add(newNode);
@@ -222,7 +233,13 @@ public class DirectEncoding implements Genome {
     }
 
 
-    public static DirectEncoding cross(DirectEncoding p1, DirectEncoding p2) {
+    @Override
+    public void toJSON(OutputStream stream) {
+
+    }
+
+
+    public static DirectEncoding cross(DirectEncodingCache cache, DirectEncoding p1, DirectEncoding p2) {
         //TODO: only take disjoint or excess from the most fit parent
         //sort based on innovation number
         Comparator<Edge> sortByInnovation = (Edge a, Edge b) -> a.id - b.id;
@@ -254,7 +271,7 @@ public class DirectEncoding implements Genome {
             }
             else if(e1.id == e2.id) {
                 //select edge at random
-                Edge edge = new Edge(getRandomNum(0, 1) == 0 ? e1 : e2);
+                Edge edge = new Edge(getRandomNum(0.0f, 1.0f) < 0.5f ? e1 : e2);
 
                 //chance to disable child if either parent is disabled
                 if(!e1.enabled || !e2.enabled)

@@ -1,5 +1,7 @@
 package plu.teamtwo.rtm.neat;
 
+import java.io.InputStream;
+import java.io.OutputStream;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Map;
@@ -7,7 +9,15 @@ import java.util.Map;
 /**
  * Used to track mutations within a generation to properly give the same identification.
  */
-public class GenomeMutations {
+public abstract class GenomeCache {
+    /**
+     * Called when a new generation is created, will setup cache for continued use.
+     */
+    abstract void newGeneration();
+
+    abstract void toJSON(OutputStream output);
+
+    static GenomeCache fromJSON(InputStream input) { return null; }
 }
 
 
@@ -15,9 +25,12 @@ public class GenomeMutations {
 /**
  * Used to track mutations within a generation to properly give the same node ids and edge ids.
  */
-class DirectEncodingMutations extends GenomeMutations {
+class DirectEncodingCache extends GenomeCache {
     private Map<Integer, int[]> mutatedNodes = new HashMap<>();
     private Map<Long, Integer> mutatedEdges = new HashMap<>();
+
+    private int nextNodeID = 0;
+    private int nextEdgeID = 0;
 
 
     /**
@@ -42,6 +55,16 @@ class DirectEncodingMutations extends GenomeMutations {
     int getMutatedEdgeID(int from, int to) {
         Integer edge = mutatedEdges.get(hashTwoInts(from, to));
         return edge == null ? -1 : edge;
+    }
+
+
+    int getNextNodeID() {
+        return nextNodeID++;
+    }
+
+
+    int getNextEdgeID() {
+        return nextEdgeID++;
     }
 
 
@@ -79,5 +102,26 @@ class DirectEncodingMutations extends GenomeMutations {
         result <<= 32;
         result |= b;
         return result;
+    }
+
+
+    /**
+     * Called when a new generation is created, will setup cache for continued use. In this case, it will clear
+     * the list of mutated edges and node, but maintain information about the new ID Values.
+     */
+    @Override
+    void newGeneration() {
+        mutatedEdges.clear();
+        mutatedNodes.clear();
+    }
+
+
+    @Override
+    void toJSON(OutputStream output) {
+
+    }
+
+    static DirectEncodingCache fromJSON(InputStream input) {
+        return null;
     }
 }
