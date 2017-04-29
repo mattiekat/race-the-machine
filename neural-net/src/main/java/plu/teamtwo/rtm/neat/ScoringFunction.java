@@ -6,11 +6,15 @@ package plu.teamtwo.rtm.neat;
  * does not return null, it will be run through the network and then the output will be passed to acceptOutput(). Once
  * generateInput() returns null, getScore() will be called to determine the fitness of the current individual.
  *
- * The functions will be called from a separate thread, and if maxThreads returned a value greater than 1, multiple
- * threads may call the function concurrently. If the scoring function needs to keep track of what individual from the
- * population is calling it, then it should make use of the ID value passed as a parameter. This ID value will be in the
- * range [0, POPULATION_SIZE) and should allow for an array of relevant information to be kept and accessed
- * concurrently.
+ * Note that this can be run in a Single Instruction Multiple Data context. The functions will be called from a separate
+ * thread, and if maxThreads returned a value greater than 1, multiple threads may call the function concurrently.
+ *
+ * The scoring function may need to keep track of what individual from the population is calling it, or what thread in
+ * the pool. To facilitate this, the thread ID can be found with Thread.currentThread().getID(), and the individual in
+ * from the population will be represented by the Unique ID passed in.
+ *
+ * If needed, it is recommended the function uses a ConcurrentMap to handle the ThreadIDs, and register them as first
+ * encountered, and if needed, the individual's IDs can be used to index into an array.
  */
 public interface ScoringFunction {
     /**

@@ -8,7 +8,7 @@ import java.util.function.Function;
 
 import static plu.teamtwo.rtm.core.util.Rand.*;
 
-class DirectEncoding implements Genome {
+class DirectEncoding extends Genome {
     private List<Node> nodeGenes = new LinkedList<>();
     private List<Edge> edgeGenes = new LinkedList<>();
 
