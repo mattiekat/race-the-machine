@@ -2,11 +2,13 @@ package plu.teamtwo.rtm.neat;
 
 import plu.teamtwo.rtm.neural.NeuralNetwork;
 
-import java.io.OutputStream;
+import java.security.InvalidParameterException;
 import java.util.*;
 import java.util.function.Function;
 
-public class DirectEncoding implements Genome {
+import static plu.teamtwo.rtm.core.util.Rand.*;
+
+class DirectEncoding implements Genome {
     private List<Node> nodeGenes = new LinkedList<>();
     private List<Edge> edgeGenes = new LinkedList<>();
 
@@ -33,17 +35,52 @@ public class DirectEncoding implements Genome {
     /// Cost of average weight difference on matching edges (including disabled) in distance function (c3).
     private static final float DISTANCE_WEIGHT_DIFFERENCE_COST = 0.4f;
 
-    private static final Random random = new Random();
+
+    /**
+     * Create a new DirectEncoding with the correct input and output nodes.
+     * @param gCache Cached information about the Genome.
+     * @param inputs  Number of inputs the system should accept.
+     * @param outputs Number of outputs the system should generate.
+     */
+    DirectEncoding(GenomeCache gCache, int inputs, int outputs) {
+        if(inputs <= 0 || outputs <= 0)
+            throw new InvalidParameterException("Inputs and outputs must be greater than 0.");
+        DirectEncodingCache cache = (DirectEncodingCache)gCache;
+
+        for(int i = 0; i < inputs; ++i)
+            nodeGenes.add(new Node(cache.getNextNodeID(), NodeType.INPUT));
+        for(int i = 0; i < outputs; ++i)
+            nodeGenes.add(new Node(cache.getNextNodeID(), NodeType.OUTPUT));
+    }
 
 
-    public DirectEncoding() {}
-
-
-    public DirectEncoding(DirectEncoding other) {
+    /**
+     * Make a deep copy of another DirectEncoding.
+     * @param other DirectEncoding to copy.
+     */
+    DirectEncoding(DirectEncoding other) {
         for(Node n : other.nodeGenes)
-            this.nodeGenes.add(new Node(n));
+            nodeGenes.add(new Node(n));
         for(Edge e : other.edgeGenes)
             this.edgeGenes.add(new Edge(e));
+    }
+
+
+    /**
+     * Used to create a new, empty DirectEncoding. If this is used, make sure to initialize the list
+     * of nodes to include at minimum the input and output nodes.
+     */
+    private DirectEncoding() {}
+
+
+    /**
+     * Copies over the input and output nodes only.
+     * @param nodes The nodes to copy from.
+     */
+    private DirectEncoding(Collection<Node> nodes) {
+        for(Node n : nodes)
+            if(n.nodeType == NodeType.INPUT || n.nodeType == NodeType.OUTPUT)
+                nodeGenes.add(new Node(n));
     }
 
 
@@ -62,6 +99,21 @@ public class DirectEncoding implements Genome {
     @Override
     public float compatibilityDistance(Genome gOther) {
         return compatibilityDistance(this, (DirectEncoding)gOther);
+    }
+
+
+    /**
+     * Used for initial members of the first generation to create random edges between the input nodes
+     * and the output nodes. This should not be needed after the first generation.
+     *
+     * @param gCache Cached information about the Genome.
+     */
+    @Override
+    public void initialize(GenomeCache gCache) {
+        DirectEncodingCache cache = (DirectEncodingCache)gCache;
+        final int toAdd = getRandomNum(0, nodeGenes.size() / 2);
+        for(int i = 0; i < toAdd; ++i)
+            mutateNewEdge(cache);
     }
 
 
@@ -233,12 +285,6 @@ public class DirectEncoding implements Genome {
     }
 
 
-    @Override
-    public void toJSON(OutputStream stream) {
-
-    }
-
-
     public static DirectEncoding cross(DirectEncodingCache cache, DirectEncoding p1, DirectEncoding p2) {
         //TODO: only take disjoint or excess from the most fit parent
         //sort based on innovation number
@@ -299,8 +345,10 @@ public class DirectEncoding implements Genome {
         }
 
         //add nodes which are used by the child from either parent (must go through both lists)
+        // we make the assumption that both have the same input and output nodes, so just copy
+        // from the first parent.
         for(Node n : p1.nodeGenes) {
-            if(discovered.get(n.id)) {
+            if(n.nodeType == NodeType.INPUT || n.nodeType == NodeType.OUTPUT || discovered.get(n.id)) {
                 child.nodeGenes.add(new Node(n));
                 discovered.set(n.id, false);
             }
@@ -374,33 +422,5 @@ public class DirectEncoding implements Genome {
         distance += ((float)excess / n) * DISTANCE_EXCESS_COST;
         distance += ((float)disjoint / n) * DISTANCE_DISJOINT_COST;
         return distance;
-    }
-
-
-    /**
-     * Used to decide if the code will do something based on a probability.
-     * @param p Chance this will return true.
-     * @return A value of true or false with a Bernoulli distribution whose mean is p.
-     */
-    private static boolean iWill(float p) {
-        if(p < 0.0f || p > 1.0f)
-            throw new IllegalArgumentException("The probability must be between 0 and 1");
-        return getRandomNum(0.0f, 1.0f) < p;
-    }
-
-
-    private static float getRandomNum(float min, float max) {
-        if(min >= max)
-            throw new IllegalArgumentException("Max must be greater than min");
-
-        return random.nextFloat() * (max - min) + min;
-    }
-
-
-    private static int getRandomNum(int min, int max) {
-        if(min >= max)
-            throw new IllegalArgumentException("Max must be greater than min");
-
-        return random.nextInt(max - min + 1) + min;
     }
 }

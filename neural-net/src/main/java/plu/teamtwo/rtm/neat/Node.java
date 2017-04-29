@@ -1,6 +1,6 @@
 package plu.teamtwo.rtm.neat;
 
-public class Node extends DirectEncoding {
+class Node {
     /// The historically-based ID of this Node
     public final int id;
     public NodeType nodeType;

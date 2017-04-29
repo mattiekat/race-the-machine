@@ -2,11 +2,19 @@ package plu.teamtwo.rtm.neat;
 
 import plu.teamtwo.rtm.neural.NeuralNetwork;
 
-import java.io.InputStream;
-import java.io.OutputStream;
-import java.io.Serializable;
+interface Genome {
+    /**
+     * Used for initial members of the first generation to create random edges between the input nodes
+     * and the output nodes. This should not be needed after the first generation.
+     *
+     * @param cache Cached information about the Genome.
+     */
+    void initialize(GenomeCache cache);
 
-public interface Genome extends Serializable {
+    /**
+     * Create a deep copy of the genome. This will enable the copy to be modified without altering the original.
+     * @return A duplicate of the current instance.
+     */
     Genome duplicate();
 
     /**
@@ -28,12 +36,6 @@ public interface Genome extends Serializable {
     float compatibilityDistance(Genome other);
 
     NeuralNetwork getANN();
-
-    void toJSON(OutputStream stream);
-
-    static Genome fromJSON(InputStream stream) {
-        return null;
-    }
 
     static Genome cross(GenomeCache cache, Genome p1, Genome p2) {
         return p1.cross(cache, p2);

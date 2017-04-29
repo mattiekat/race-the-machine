@@ -1,21 +1,21 @@
 package plu.teamtwo.rtm.neat;
 
-public class Edge extends DirectEncoding {
+class Edge {
     /// The historically-based ID of this edge (innovation number)
-    public final int id;
-    public boolean enabled;
-    public int toNode;
-    public int fromNode;
-    public float weight;
+    final int id;
+    boolean enabled;
+    int toNode;
+    int fromNode;
+    float weight;
 
 
-    public Edge(Edge other) {
+    Edge(Edge other) {
         this(other.id, other.fromNode, other.toNode, other.weight);
         enabled = other.enabled;
     }
 
 
-    public Edge(int id, int fromNode, int toNode, float weight) {
+    Edge(int id, int fromNode, int toNode, float weight) {
         enabled = true;
         this.toNode = toNode;
         this.fromNode = fromNode;
