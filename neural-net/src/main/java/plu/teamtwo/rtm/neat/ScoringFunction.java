@@ -1,7 +1,5 @@
 package plu.teamtwo.rtm.neat;
 
-import com.sun.istack.internal.Nullable;
-
 /**
  * This is used by the NEAT Controller to run and asses the capability of individuals in the population.
  * The function generateInput() will be called until it returns null. For each time that generateInput() is called and
@@ -29,7 +27,6 @@ public interface ScoringFunction {
      * @param id An ID used to identify the calling individual from the population.
      * @return An array of output values.
      */
-    @Nullable
     float[] generateInput(int id);
 
     /**
