@@ -2,6 +2,7 @@ package plu.teamtwo.rtm.neat;
 
 import plu.teamtwo.rtm.neural.NeuralNetwork;
 
+import java.io.*;
 import java.security.InvalidParameterException;
 import java.util.LinkedList;
 import java.util.List;
@@ -31,6 +32,9 @@ public class NEATController {
     private final int inputs;
     private final int outputs;
     private GenomeCache cache;
+    private int generationNum;
+    private int nextSpeciesID;
+    private transient String savePath;
 
     private List<Species> generation = new LinkedList<>();
 
@@ -44,11 +48,112 @@ public class NEATController {
         this.inputs = inputs;
         this.outputs = outputs;
         this.cache = null;
+        this.generationNum = 0;
+        this.nextSpeciesID = 0;
+        this.savePath = null;
     }
 
 
-    //TODO: create a way to get an ANN for each one and run it for a score?
-    //TODO: support multithreaded scoring? Enable/disable by boolean...
+    /**
+     * Save a NEATController to a JSON archive. This should be used before creating the next generation to prevent a
+     * loss of information as the generation is overwritten.
+     *
+     * @param controller Controller to save to a file.
+     * @param path       Location to save the data to.
+     * @return True if it was successfully saved, false otherwise.
+     */
+    static boolean saveToFile(NEATController controller, String path) {
+        if(controller == null || path == null) return false;
+        File dir = new File(path);
+        if(!dir.exists() || !dir.isDirectory()) {
+            System.err.println("The directory '" + path + "' does not exist or is not a directory.");
+            return false;
+        }
+        File file = new File(String.format("%sG%5d.json", dir.getPath() + File.pathSeparator, controller.generationNum));
+        try {
+            writeToStream(controller, new FileOutputStream(file, false));
+        } catch(IOException e) {
+            System.err.println("Could not save NEAT Controller: " + e.getMessage());
+            return false;
+        }
+        return true;
+    }
+
+
+    /**
+     * Read a NEATController from a JSON file. This will create a new NEATController with the information of the
+     * most recent generation in the JSON file. This expects to receive a directory with the generations saved into it.
+     * <p>
+     * Note: auto save will need to be re-enabled if it is desired in the new instance.
+     *
+     * @param path Directory to read from.
+     * @return A NEATController initialized to the latest generation in the JSON archive.
+     */
+    static NEATController readFromFile(String path) throws IOException {
+        //verify we were given a directory.
+        if(path == null) return null;
+        File file = new File(path);
+        if(!file.exists())
+            throw new InvalidParameterException("Directory does not exist.");
+        if(!file.isDirectory())
+            throw new InvalidParameterException("Path is not to a directory.");
+        File[] files = file.listFiles( //filter out non-files and files which are not a generation
+                (File dir, String name) -> dir.isFile() && name.matches("G[0-9]{5}\\.json")
+        );
+
+        if(files == null || files.length <= 0)
+            throw new FileNotFoundException("Could not find a valid generation file.");
+
+        //find the file with the greatest number (it is most recent generation)
+        file = files[0];
+        for(int x = 1; x < files.length; ++x) {
+            if(files[x].getName().compareTo(file.getName()) > 0)
+                file = files[x];
+        }
+        return readFromStream(new FileInputStream(file));
+    }
+
+
+    /**
+     * Read a NEATController from a JSON stream. This will create a new NEATController with the information of the
+     * most recent generation in the JSON stream.
+     *
+     * @param inputStream A stream of JSON representing a NEATController.
+     * @return A NEATController initialized to the latest generation in the JSON archive.
+     */
+    static NEATController readFromStream(InputStream inputStream) {
+        return null;
+    }
+
+
+    /**
+     * Write a NEATController to an output stream. This will save all the information about the current generation and
+     * other information about the current controller state.
+     *
+     * @param outputStream A stream to output the JSON to.
+     */
+    static void writeToStream(NEATController controller, OutputStream outputStream) {
+
+    }
+
+
+    /**
+     * Setup autosave (or disable it). If enabled, the NEATController will save its current state to a file before
+     * creating the next generation (preserving historical information). If this throws an exception, auto-saves will
+     * be disabled until it is called again without errors.
+     *
+     * @param path Directory to save the data in.
+     */
+    void setAutoSave(String path) {
+        savePath = null;
+        if(path == null) return;
+        File file = new File(path);
+        if(!file.exists())
+            throw new InvalidParameterException("Directory does not exist.");
+        if(!file.isDirectory())
+            throw new InvalidParameterException("Path is not to a directory.");
+        savePath = path;
+    }
 
 
     /**
@@ -67,40 +172,49 @@ public class NEATController {
         for(int x = 0; x < POPULATION_SIZE; ++x) {
             Genome g = base.duplicate();
             g.initialize(cache);
-            addGenome(g);
+            initAddGenome(g);
         }
     }
 
 
     /**
      * Asses the fitness of all the members of the current generation.
+     *
      * @param scoringFunction Method by which to asses how well the individuals perform.
      */
     public void assesGeneration(ScoringFunction scoringFunction) {
         //Construct a new thread pool
         final int MAX_THREADS = scoringFunction.maxThreads();
         ExecutorService threadPool = Executors.newFixedThreadPool(
-            Math.min(
-                MAX_THREADS <= 0 ? 10000 : MAX_THREADS,
-                Runtime.getRuntime().availableProcessors() * 2
-            )
+                Math.min(
+                        MAX_THREADS <= 0 ? 10000 : MAX_THREADS,
+                        Runtime.getRuntime().availableProcessors() * 2
+                )
         );
 
         //submit tasks to be run
         int id = 0;
-        for(Species s : generation) for(Genome g : s)
-            threadPool.submit(new GenomeProcessor(id++, g, scoringFunction));
+        for(Species s : generation)
+            for(Genome g : s)
+                threadPool.submit(new GenomeProcessor(id++, g, scoringFunction));
 
         //wait for all tasks to finish running
         threadPool.shutdown();
         try {
-            while(!threadPool.awaitTermination(1, TimeUnit.MINUTES));
+            while(!threadPool.awaitTermination(1, TimeUnit.MINUTES)) ;
         } catch(InterruptedException e) {
             threadPool.shutdownNow();
-        };
+        }
+
+        //Adjust the fitness values
+        for(Species s : generation)
+            s.adjustFitnessValues();
     }
 
 
+    /**
+     * Breed the next generation from the current one.
+     */
     public void nextGeneration() {
         //TODO: this
     }
@@ -109,9 +223,12 @@ public class NEATController {
     /**
      * Add a genome to the species it belongs to (will find out which one that is), or create a new species if it is not
      * compatible with any of the existing ones.
+     * <p>
+     * This should only be used during initialization.
+     *
      * @param genome The genome to add.
      */
-    private void addGenome(Genome genome) {
+    private void initAddGenome(Genome genome) {
         for(Species s : generation) {
             if(s.compatibilityDistance(genome) < COMPATIBILITY_THRESHOLD) {
                 s.add(genome);
@@ -119,11 +236,8 @@ public class NEATController {
             }
         }
 
-        Species species = new Species();
-        species.add(genome);
-        generation.add(species);
+        generation.add(new Species(nextSpeciesID++, -1, genome));
     }
-
 
 
     /**
