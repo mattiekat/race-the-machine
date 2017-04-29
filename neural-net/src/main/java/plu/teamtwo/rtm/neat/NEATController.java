@@ -40,7 +40,7 @@ public class NEATController {
 
 
     //TODO: take parameter settings
-    NEATController(Encoding encoding, int inputs, int outputs) {
+    public NEATController(Encoding encoding, int inputs, int outputs) {
         if(inputs <= 0 || outputs <= 0)
             throw new InvalidParameterException("The number of inputs and outputs must be greater than 0.");
 
@@ -62,7 +62,7 @@ public class NEATController {
      * @param path       Location to save the data to.
      * @return True if it was successfully saved, false otherwise.
      */
-    static boolean saveToFile(NEATController controller, String path) {
+    public static boolean saveToFile(NEATController controller, String path) {
         if(controller == null || path == null) return false;
         File dir = new File(path);
         if(!dir.exists() || !dir.isDirectory()) {
@@ -89,7 +89,7 @@ public class NEATController {
      * @param path Directory to read from.
      * @return A NEATController initialized to the latest generation in the JSON archive.
      */
-    static NEATController readFromFile(String path) throws IOException {
+    public static NEATController readFromFile(String path) throws IOException {
         //verify we were given a directory.
         if(path == null) return null;
         File file = new File(path);
@@ -121,7 +121,8 @@ public class NEATController {
      * @param inputStream A stream of JSON representing a NEATController.
      * @return A NEATController initialized to the latest generation in the JSON archive.
      */
-    static NEATController readFromStream(InputStream inputStream) {
+    public static NEATController readFromStream(InputStream inputStream) {
+        //TODO: implement this function
         return null;
     }
 
@@ -132,8 +133,8 @@ public class NEATController {
      *
      * @param outputStream A stream to output the JSON to.
      */
-    static void writeToStream(NEATController controller, OutputStream outputStream) {
-
+    public static void writeToStream(NEATController controller, OutputStream outputStream) {
+        //TODO: implement this function
     }
 
 
@@ -144,7 +145,7 @@ public class NEATController {
      *
      * @param path Directory to save the data in.
      */
-    void setAutoSave(String path) {
+    public void setAutoSave(String path) {
         savePath = null;
         if(path == null) return;
         File file = new File(path);
@@ -159,7 +160,7 @@ public class NEATController {
     /**
      * Initialize the system by creating the first generation.
      */
-    void createFirstGeneration() {
+    public void createFirstGeneration() {
         Genome base = null;
 
         switch(encoding) {
