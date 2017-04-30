@@ -34,7 +34,10 @@ public class NEATController {
     private GenomeCache cache;
     private int generationNum;
     private int nextSpeciesID;
+    private float fitness;
+    private float adjFitness;
     private transient String savePath;
+    private transient boolean sorted;
 
     private List<Species> generation = new LinkedList<>();
 
@@ -51,6 +54,7 @@ public class NEATController {
         this.generationNum = 0;
         this.nextSpeciesID = 0;
         this.savePath = null;
+        this.sorted = false;
     }
 
 
@@ -102,6 +106,7 @@ public class NEATController {
      */
     public void createFirstGeneration() {
         Genome base = null;
+        sorted = false;
 
         switch(encoding) {
             case DIRECT_ENCODING:
@@ -124,6 +129,7 @@ public class NEATController {
      * @param scoringFunction Method by which to asses how well the individuals perform.
      */
     public void assesGeneration(ScoringFunction scoringFunction) {
+        sorted = false;
         //Construct a new thread pool
         final int MAX_THREADS = scoringFunction.maxThreads();
         ExecutorService threadPool = Executors.newFixedThreadPool(
@@ -142,14 +148,21 @@ public class NEATController {
         //wait for all tasks to finish running
         threadPool.shutdown();
         try {
-            while(!threadPool.awaitTermination(1, TimeUnit.MINUTES)) ;
+            while(!threadPool.awaitTermination(1, TimeUnit.MINUTES))
+                /*Keep waiting*/;
         } catch(InterruptedException e) {
             threadPool.shutdownNow();
         }
 
+        fitness = adjFitness = 0;
         //Adjust the fitness values
-        for(Species s : generation)
+        for(Species s : generation) {
             s.adjustFitnessValues();
+            fitness += s.getFitness() * (float)s.size();
+            adjFitness += s.getAdjFitness() * (float)s.size();
+        }
+        fitness /= POPULATION_SIZE;
+        adjFitness /= POPULATION_SIZE;
     }
 
 
@@ -157,7 +170,26 @@ public class NEATController {
      * Breed the next generation from the current one.
      */
     public void nextGeneration() {
-        //TODO: this
+        if(savePath != null)
+            Archiver.saveToFile(this, savePath);
+
+        /*
+         * Every species is assigned a potentially different number of offspring in proportion to the sum of adjusted
+         * fitnesses of its member organisms. Species then reproduce by first eliminating the lowest performing members
+         * from the population. The entire population is then replaced by the offspring of the remaining organisms in
+         * each species.
+         */
+
+        sorted = false;
+    }
+
+
+    void sortByFitness() {
+        if(sorted) return;
+        generation.sort((Species a, Species b) -> Math.round(a.getAdjFitness() - b.getAdjFitness()));
+        for(Species s : generation)
+            s.sortByFitness();
+        sorted = true;
     }
 
 
@@ -183,6 +215,7 @@ public class NEATController {
 
     /**
      * Get the number of generations since creation.
+     *
      * @return The current generation number.
      */
     public int getGenerationNum() {

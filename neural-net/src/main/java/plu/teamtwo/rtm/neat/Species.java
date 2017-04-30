@@ -7,6 +7,9 @@ import java.util.List;
 class Species implements Iterable<Genome> {
     final int speciesID;
     final int parentSpeciesID;
+    /// Average adjusted fitness of this species
+    private float fitness;
+    private float adjFitness;
 
     private List<Genome> memebers = new ArrayList<>();
 
@@ -26,6 +29,10 @@ class Species implements Iterable<Genome> {
         return memebers.get(0);
     }
 
+    float getFitness() { return fitness; }
+
+    float getAdjFitness() { return adjFitness; }
+
 
     /**
      * Calculate the compatibility distance between a genome and the representative of the species.
@@ -34,6 +41,11 @@ class Species implements Iterable<Genome> {
      */
     float compatibilityDistance(Genome genome) {
         return getRep().compatibilityDistance(genome);
+    }
+
+
+    int size() {
+        return memebers.size();
     }
 
 
@@ -52,13 +64,24 @@ class Species implements Iterable<Genome> {
      */
     void adjustFitnessValues() {
         final int size = memebers.size();
-        for(Genome i : memebers)
+        fitness = adjFitness = 0;
+        for(Genome i : memebers) {
             i.adjustFitness(size);
+            fitness += i.getFitness();
+            adjFitness += i.getAdjFitness();
+        }
+        fitness /= (float)memebers.size();
+        adjFitness /= (float)memebers.size();
     }
 
 
     @Override
     public Iterator<Genome> iterator() {
         return memebers.iterator();
+    }
+
+
+    void sortByFitness() {
+        memebers.sort((Genome a, Genome b) -> Math.round(a.getFitness() - b.getFitness()));
     }
 }
