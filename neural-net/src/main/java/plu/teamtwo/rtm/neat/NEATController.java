@@ -1,11 +1,14 @@
 package plu.teamtwo.rtm.neat;
 
 import plu.teamtwo.rtm.neural.NeuralNetwork;
+import static plu.teamtwo.rtm.core.util.Rand.*;
 
 import java.io.*;
 import java.security.InvalidParameterException;
-import java.util.LinkedList;
+import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
+import java.util.ListIterator;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
@@ -17,8 +20,12 @@ import java.util.concurrent.TimeUnit;
 public class NEATController {
     /// Size of the total population.
     private static final int POPULATION_SIZE = 150;
-    /// Number of generations a new generation can show no improvement for.
+    /// Number of generations a new species can show no improvement for.
     private static final int NEW_SPECIES_SAFE_PERIOD = 15;
+    /// Number of generations a species can show no improvement before being removed.
+    private static final int GENERATIONS_BEFORE_REMOVAL = 15;
+    /// Minimum number of new members in the next generation of a species which has not been removed.
+    private static final int MINIMUM_BREEDING_ALLOWANCE = 1;
     /// Number of individuals required in a species to keep the leader unchanged from one generation to the next.
     private static final int SPECIES_SIZE_TO_PROTECT_LEADER = 5;
     /// Chance for two individuals from different species to be mated.
@@ -39,7 +46,7 @@ public class NEATController {
     private transient String savePath;
     private transient boolean sorted;
 
-    private List<Species> generation = new LinkedList<>();
+    private List<Species> generation = new ArrayList<>();
 
 
     //TODO: take parameter settings
@@ -78,6 +85,7 @@ public class NEATController {
      * @param outputStream A stream to output the JSON to.
      */
     public static void writeToStream(NEATController controller, OutputStream outputStream) {
+        controller.sortByFitness();
         //TODO: implement this function
     }
 
@@ -105,6 +113,7 @@ public class NEATController {
      * Initialize the system by creating the first generation.
      */
     public void createFirstGeneration() {
+        //TODO: switch to creating a fully connected input-output system as the paper describes?
         Genome base = null;
         sorted = false;
 
@@ -149,20 +158,16 @@ public class NEATController {
         threadPool.shutdown();
         try {
             while(!threadPool.awaitTermination(1, TimeUnit.MINUTES))
-                /*Keep waiting*/;
+                /*Keep waiting*/ ;
         } catch(InterruptedException e) {
             threadPool.shutdownNow();
         }
 
-        fitness = adjFitness = 0;
         //Adjust the fitness values
-        for(Species s : generation) {
-            s.adjustFitnessValues();
-            fitness += s.getFitness() * (float)s.size();
-            adjFitness += s.getAdjFitness() * (float)s.size();
-        }
-        fitness /= POPULATION_SIZE;
-        adjFitness /= POPULATION_SIZE;
+        for(Species s : generation)
+            s.adjustFitnessValues(generationNum);
+
+        calculateFitness();
     }
 
 
@@ -172,19 +177,75 @@ public class NEATController {
     public void nextGeneration() {
         if(savePath != null)
             Archiver.saveToFile(this, savePath);
+        sortByFitness();
 
-        /*
-         * Every species is assigned a potentially different number of offspring in proportion to the sum of adjusted
-         * fitnesses of its member organisms. Species then reproduce by first eliminating the lowest performing members
-         * from the population. The entire population is then replaced by the offspring of the remaining organisms in
-         * each species.
-         */
+        //remove any non-improving species
+        for(ListIterator<Species> i = generation.listIterator(); i.hasNext();) {
+            Species s = i.next();
+            if((s.appeared - generationNum) < NEW_SPECIES_SAFE_PERIOD)
+                continue; //safe no matter what
+            if((s.getLastImprovement() - generationNum) > GENERATIONS_BEFORE_REMOVAL)
+                i.remove(); //goodbye...
+        }
 
+        //make sure every species gets a members in the next generation
+        int[] allowances = new int[generation.size()];
+        Arrays.fill(allowances, MINIMUM_BREEDING_ALLOWANCE);
+        //keep track of total breeding allowance given
+        int bred = generation.size() * MINIMUM_BREEDING_ALLOWANCE;
+
+        final float globalAdjFitnessSum = adjFitness * (float)POPULATION_SIZE;
+        final int allowanceAfterGrantee = Math.min(POPULATION_SIZE - bred, 0);
+
+        if(allowanceAfterGrantee == 0) {
+            System.err.println("Warning: generation " + generationNum + " may exceed population size due to the " +
+                    "number of species and minimum breeding allowance."
+            );
+        }
+
+        //Determine an estimated allowance for each species
+        // (SpeciesAvgAdjFitness * NumSpeciesMembers) / GlobalAvgAdjFitness = BreedingAllowance
+        for(int i = 0; i < generation.size(); ++i) {
+            final Species s = generation.get(i);
+            allowances[i] = (int) ((s.getAdjFitness() * s.size() * (float)allowanceAfterGrantee) / globalAdjFitnessSum);
+            bred += allowances[i];
+        }
+
+        //since we floor the value, randomly assign any remaining
+        //TODO: use function to favor higher-performing species?
+        while(allowanceAfterGrantee - bred > 0) {
+            final int species = getRandomNum(0, allowances.length - 1);
+            allowances[species]++;
+            bred++;
+        }
+
+        //breed each of the species
+        List<Species> nextGen = new ArrayList<>(generation.size());
+        for(int i = 0; i < generation.size(); ++i) {
+            final Species s = generation.get(i);
+            nextGen.addAll(
+                s.breed(generationNum, allowances[i])
+            );
+        }
+
+        //update the generation (drops old one)
         sorted = false;
+        generationNum++;
+        generation = nextGen;
     }
 
 
-    void sortByFitness() {
+    /**
+     * Get the number of generations since creation.
+     *
+     * @return The current generation number.
+     */
+    public int getGenerationNum() {
+        return generationNum;
+    }
+
+
+    private void sortByFitness() {
         if(sorted) return;
         generation.sort((Species a, Species b) -> Math.round(a.getAdjFitness() - b.getAdjFitness()));
         for(Species s : generation)
@@ -209,18 +270,24 @@ public class NEATController {
             }
         }
 
-        generation.add(new Species(nextSpeciesID++, -1, genome));
+        generation.add(new Species(nextSpeciesID++, -1, generationNum, genome));
     }
 
 
     /**
-     * Get the number of generations since creation.
-     *
-     * @return The current generation number.
+     * Update the global fitness values.
      */
-    public int getGenerationNum() {
-        return generationNum;
+    private void calculateFitness() {
+        fitness = adjFitness = 0;
+        //Adjust the fitness values
+        for(Species s : generation) {
+            fitness += s.getFitness() * (float) s.size();
+            adjFitness += s.getAdjFitness() * (float) s.size();
+        }
+        fitness /= POPULATION_SIZE;
+        adjFitness /= POPULATION_SIZE;
     }
+
 
 
     /**
