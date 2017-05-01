@@ -1,5 +1,8 @@
 package plu.teamtwo.rtm.neat;
 
+import com.google.gson.Gson;
+import com.google.gson.stream.JsonReader;
+import com.google.gson.stream.JsonWriter;
 import plu.teamtwo.rtm.neural.NeuralNetwork;
 import static plu.teamtwo.rtm.core.util.Rand.*;
 
@@ -69,9 +72,12 @@ public class NEATController {
      * @param inputStream A stream of JSON representing a NEATController.
      * @return A NEATController initialized to the latest generation in the JSON archive.
      */
-    public static NEATController readFromStream(InputStream inputStream) {
-        //TODO: implement this function
-        return null;
+    public static NEATController readFromStream(InputStream inputStream) throws IOException {
+        JsonReader reader = new JsonReader(new InputStreamReader(inputStream, "UTF-8"));
+        Gson gson = new Gson();
+        NEATController controller = gson.fromJson(reader, NEATController.class);
+        reader.close();
+        return controller;
     }
 
 
@@ -81,9 +87,14 @@ public class NEATController {
      *
      * @param outputStream A stream to output the JSON to.
      */
-    public static void writeToStream(NEATController controller, OutputStream outputStream) {
+    public static void writeToStream(NEATController controller, OutputStream outputStream) throws IOException {
         controller.sortByFitness();
-        //TODO: implement this function
+
+        Gson gson = new Gson();
+        JsonWriter writer = new JsonWriter(new OutputStreamWriter(outputStream, "UTF-8"));
+        writer.setIndent("  ");
+        gson.toJson(controller, NEATController.class, writer);
+        writer.close();
     }
 
 
