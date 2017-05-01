@@ -43,4 +43,39 @@ public class Rand {
 
         return random.nextInt(max - min + 1) + min;
     }
+
+    /**
+     * A function designed to get the index which should be dropped with a higher probability of dropping larger index
+     * values. This is useful for dropping the lowest scoring members of a species by probability. The function used is
+     * Floor( ((n*w + 1) - (n*w + 1)<sup>-x + 1</sup>) / w ) where x is a random number in the range [0, 1), is is the
+     * number of indices, and w is a weight factor (large number favor selecting larger indices).
+     *
+     * @param n Number of items (Size)
+     * @param w Weighting factor (As the value approaches zero, it will become an equal distribution, while larger
+     *          numbers favor larger indices. The value must be greater than zero.
+     * @return An index in the range [0, n)
+     */
+    public static int randomBackWeightedIndex(int n, float w) {
+        final float x = random.nextFloat();
+        final float b = (float)n * w + 1.0f;
+        return (int)((b - Math.pow(b, 1.0f - x)) / w);
+    }
+
+
+    /**
+     * A function designed to get the index which should be dropped with a higher probability of dropping smaller index
+     * values. This is useful for choosing the most fit members for breeding by probability. The function used is
+     * Floor( ((n*w + 1)<sup>x</sup> - 1) / w ) where x is a random number in the range [0, 1), is is the
+     * number of indices, and w is a weight factor (large numbers favor selecting smaller indices).
+     *
+     * @param n Number of items (Size)
+     * @param w Weighting factor (As the value approaches zero, it will become an equal distribution, while larger
+     *          numbers favor smaller indices. The value must be greater than zero.
+     * @return An index in the range [0, n)
+     */
+    public static int randomFrontWeightedIndex(int n, float w) {
+        final float x = random.nextFloat();
+        final float numerator = (float)(Math.pow(n * w + 1.0f, x) - 1.0f);
+        return (int)(numerator / w);
+    }
 }
