@@ -14,10 +14,6 @@ abstract class GenomeCache {
      * Called when a new generation is created, will setup cache for continued use.
      */
     abstract void newGeneration();
-
-    abstract void toJSON(OutputStream output);
-
-    static GenomeCache fromJSON(InputStream input) { return null; }
 }
 
 
@@ -113,15 +109,5 @@ class DirectEncodingCache extends GenomeCache {
     void newGeneration() {
         mutatedEdges.clear();
         mutatedNodes.clear();
-    }
-
-
-    @Override
-    void toJSON(OutputStream output) {
-
-    }
-
-    static DirectEncodingCache fromJSON(InputStream input) {
-        return null;
     }
 }
