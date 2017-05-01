@@ -240,9 +240,6 @@ class DirectEncoding extends Genome {
             if(e.enabled)
                 edges.add(e);
 
-        //TODO: remove any hidden nodes that do not have a connection to the outputs
-        // Invert directions and then perform DFS/BFS from exits and see what nodes are discovered
-
         //construct a neural network now that we know the sizes
         NeuralNetwork net = new NeuralNetwork(inputs.size(), outputs.size(), hidden.size());
 
@@ -285,6 +282,15 @@ class DirectEncoding extends Genome {
     }
 
 
+    /**
+     * Cross the genomes of two parents to create a child. This will take the disjoint and excess genes from the most
+     * fit parent and randomly choose between the matching ones.
+     *
+     * @param cache Cached information about the genome.
+     * @param p1    First parent, the most fit of the two.
+     * @param p2    Second parent, the less fit of the two.
+     * @return A child which is the result of crossing the genomes
+     */
     public static DirectEncoding cross(DirectEncodingCache cache, DirectEncoding p1, DirectEncoding p2) {
         //TODO: only take disjoint or excess from the most fit parent
         //sort based on innovation number
@@ -307,10 +313,8 @@ class DirectEncoding extends Genome {
                 child.edgeGenes.add(new Edge(e1));
                 step1 = true;
             }
-            else if(e1 == null && e2 != null) { //e2 is an excess node
-                child.edgeGenes.add(new Edge(e2));
+            else if(e1 == null && e2 != null) //e2 is an excess node
                 step2 = true;
-            }
             else if(e1.id < e2.id) { //e1 is a disjoint node
                 child.edgeGenes.add(new Edge(e1));
                 step1 = true;
@@ -328,10 +332,8 @@ class DirectEncoding extends Genome {
                 child.edgeGenes.add(edge);
                 step1 = step2 = true;
             }
-            else { // e1.id > e2.id //e2 is a disjoint node
-                child.edgeGenes.add(new Edge(e2));
+            else // e1.id > e2.id //e2 is a disjoint node
                 step2 = true;
-            }
 
             if(step1) e1 = i1.hasNext() ? i1.next() : null;
             if(step2) e2 = i2.hasNext() ? i2.next() : null;

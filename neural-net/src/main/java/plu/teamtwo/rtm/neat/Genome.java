@@ -9,6 +9,7 @@ abstract class Genome {
 
     /**
      * Set the fitness value for this individual.
+     *
      * @param fitness A measure of how well this individual performed.
      */
     void setFitness(float fitness) {
@@ -19,6 +20,7 @@ abstract class Genome {
 
     /**
      * Get the fitness value for this individual.
+     *
      * @return This individual's fitness value or 0 if unset.
      */
     float getFitness() {
@@ -28,15 +30,17 @@ abstract class Genome {
 
     /**
      * Sets the adjusted fitness.
+     *
      * @param n Number of individuals in the species.
      */
     void adjustFitness(int n) {
-        adjFitness = fitness / (float)n;
+        adjFitness = fitness / (float) n;
     }
 
 
     /**
      * Get the adjusted fitness of this individual.
+     *
      * @return This individual's fitness value adjusted for the species, or 0 if unset.
      */
     float getAdjFitness() {
@@ -82,6 +86,15 @@ abstract class Genome {
     abstract NeuralNetwork getANN();
 
 
+    /**
+     * Cross the genomes of two parents to create a child. This will take the disjoint and excess genes from the most
+     * fit parent and randomly choose between the matching ones.
+     *
+     * @param cache Cached information about the genome.
+     * @param p1    First parent, the most fit of the two.
+     * @param p2    Second parent, the less fit of the two.
+     * @return A child which is the result of crossing the genomes
+     */
     static Genome cross(GenomeCache cache, Genome p1, Genome p2) {
         return p1.cross(cache, p2);
     }
