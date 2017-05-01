@@ -5,10 +5,7 @@ import static plu.teamtwo.rtm.core.util.Rand.*;
 
 import java.io.*;
 import java.security.InvalidParameterException;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.List;
-import java.util.ListIterator;
+import java.util.*;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
@@ -26,14 +23,14 @@ public class NEATController {
     private static final int GENERATIONS_BEFORE_REMOVAL = 15;
     /// Minimum number of new members in the next generation of a species which has not been removed.
     private static final int MINIMUM_BREEDING_ALLOWANCE = 1;
-    /// Number of individuals required in a species to keep the leader unchanged from one generation to the next.
-    private static final int SPECIES_SIZE_TO_PROTECT_LEADER = 5;
     /// Chance for two individuals from different species to be mated.
     private static final float INTERSPECIES_MATING_RATE = 0.001f;
-    /// Threshold used in compatibility distance to determine if two individuals are in the same species (δt).
-    private static final float COMPATIBILITY_THRESHOLD = 3.0f;
+    /// Number of individuals required in a species to keep the leader unchanged from one generation to the next.
+    private static final int SPECIES_SIZE_TO_PROTECT_LEADER = 5;
     /// Percent of children in the next generation which are produced by crossover.
-    private static final float CROSSOVER_RATE = 0.75f;
+    private static final float BREEDING_CROSSOVER_RATE = 0.75f;
+    /// The percentage of the species to drop; uses floor function, so in small species less will be dropped.
+    private static final float BREEDING_DROP_RATE = 0.20f;
 
     public final Encoding encoding;
     private final int inputs;
@@ -127,7 +124,7 @@ public class NEATController {
         for(int x = 0; x < POPULATION_SIZE; ++x) {
             Genome g = base.duplicate();
             g.initialize(cache);
-            initAddGenome(g);
+            addGenome(generation, g, -1);
         }
     }
 
@@ -178,15 +175,15 @@ public class NEATController {
         if(savePath != null)
             Archiver.saveToFile(this, savePath);
         sortByFitness();
+        cache.newGeneration();
 
         //remove any non-improving species
-        for(ListIterator<Species> i = generation.listIterator(); i.hasNext();) {
-            Species s = i.next();
-            if((s.appeared - generationNum) < NEW_SPECIES_SAFE_PERIOD)
-                continue; //safe no matter what
-            if((s.getLastImprovement() - generationNum) > GENERATIONS_BEFORE_REMOVAL)
-                i.remove(); //goodbye...
-        }
+        generation.removeIf(s ->
+            //must be out of safe period
+            (generationNum - s.appeared) >= NEW_SPECIES_SAFE_PERIOD &&
+            //remove if it has not improved in a while
+            (s.getLastImprovement() - generationNum) > GENERATIONS_BEFORE_REMOVAL
+        );
 
         //make sure every species gets a members in the next generation
         int[] allowances = new int[generation.size()];
@@ -195,9 +192,9 @@ public class NEATController {
         int bred = generation.size() * MINIMUM_BREEDING_ALLOWANCE;
 
         final float globalAdjFitnessSum = adjFitness * (float)POPULATION_SIZE;
-        final int allowanceAfterGrantee = Math.min(POPULATION_SIZE - bred, 0);
+        final int allowanceAfterGuarantee = Math.min(POPULATION_SIZE - bred, 0);
 
-        if(allowanceAfterGrantee == 0) {
+        if(allowanceAfterGuarantee == 0) {
             System.err.println("Warning: generation " + generationNum + " may exceed population size due to the " +
                     "number of species and minimum breeding allowance."
             );
@@ -207,13 +204,13 @@ public class NEATController {
         // (SpeciesAvgAdjFitness * NumSpeciesMembers) / GlobalAvgAdjFitness = BreedingAllowance
         for(int i = 0; i < generation.size(); ++i) {
             final Species s = generation.get(i);
-            allowances[i] = (int) ((s.getAdjFitness() * s.size() * (float)allowanceAfterGrantee) / globalAdjFitnessSum);
+            allowances[i] = (int) ((s.getAdjFitness() * s.size() * (float)allowanceAfterGuarantee) / globalAdjFitnessSum);
             bred += allowances[i];
         }
 
         //since we floor the value, randomly assign any remaining
         //TODO: use function to favor higher-performing species?
-        while(allowanceAfterGrantee - bred > 0) {
+        while(allowanceAfterGuarantee - bred > 0) {
             final int species = getRandomNum(0, allowances.length - 1);
             allowances[species]++;
             bred++;
@@ -224,7 +221,7 @@ public class NEATController {
         for(int i = 0; i < generation.size(); ++i) {
             final Species s = generation.get(i);
             nextGen.addAll(
-                s.breed(generationNum, allowances[i])
+                breed(s, generationNum, allowances[i])
             );
         }
 
@@ -245,9 +242,14 @@ public class NEATController {
     }
 
 
+    /**
+     * Sort the species by their average individual fitness in descending order such that the most fit species is listed
+     * at the head of the list.
+     */
     private void sortByFitness() {
         if(sorted) return;
-        generation.sort((Species a, Species b) -> Math.round(a.getAdjFitness() - b.getAdjFitness()));
+        //sort descending
+        generation.sort( (Species a, Species b) -> Math.round(b.getAdjFitness() - a.getAdjFitness()) );
         for(Species s : generation)
             s.sortByFitness();
         sorted = true;
@@ -257,20 +259,16 @@ public class NEATController {
     /**
      * Add a genome to the species it belongs to (will find out which one that is), or create a new species if it is not
      * compatible with any of the existing ones.
-     * <p>
-     * This should only be used during initialization.
      *
+     * @param species A list of species to attempt adding the genome to.
      * @param genome The genome to add.
+     * @param parentSpeciesID ID of the parent species should this need to add a new species for the genome.
      */
-    private void initAddGenome(Genome genome) {
-        for(Species s : generation) {
-            if(s.compatibilityDistance(genome) < COMPATIBILITY_THRESHOLD) {
-                s.add(genome);
-                return;
-            }
-        }
+    private void addGenome(List<Species> species, Genome genome, int parentSpeciesID) {
+        for(Species s : species)
+            if(s.add(genome)) return;
 
-        generation.add(new Species(nextSpeciesID++, -1, generationNum, genome));
+        species.add(new Species(nextSpeciesID++, parentSpeciesID, generationNum, genome));
     }
 
 
@@ -286,6 +284,68 @@ public class NEATController {
         }
         fitness /= POPULATION_SIZE;
         adjFitness /= POPULATION_SIZE;
+    }
+
+
+    /**
+     * This will breed the current generation to create the next gen. It is possible that in the process the species
+     * will be split into two or more resulting species.
+     *
+     * @param nextGen   Integer representing the new generation's number.
+     * @param offspring Number of offspring this species should produce for the next generation.
+     * @return A list of the resulting species after breeding. Will be empty if the allowance is 0.
+     */
+    private List<Species> breed(Species species, int nextGen, int offspring) {
+        List<Species> newSpeciesList = new LinkedList<>();
+        if(offspring <= 0) //handle the odd case
+            return newSpeciesList;
+
+        //add an empty duplicate of the last generation to the list for the new generation to fall into
+        newSpeciesList.add(species.emptyDuplicate());
+
+        //will we protect the leader
+        if(offspring >= SPECIES_SIZE_TO_PROTECT_LEADER) {
+            addGenome(newSpeciesList, species.getChampion(), species.speciesID);
+            offspring--;
+        }
+
+        //TODO: do we need to drop off the back? We can just use a greater weight in selecting next generation...
+        { //drop the "bottom performers" using a probability distribution function which maps from [0,1] to [0, size - 1]
+            int numToDrop = (int) (species.size() * BREEDING_DROP_RATE);
+            if(species.size() - numToDrop <= 0) {
+                System.err.println("BREEDING_DROP_RATE is too high.");
+                numToDrop = species.size() - 2;
+            }
+            for(int i = 0; i < numToDrop; ++i)
+                species.removeNthMostFit(
+                        randomBackWeightedIndex(species.size(), 10.0f)
+                );
+        }
+
+        //create the children
+        while(offspring-- > 0) {
+            Genome child = null;
+            if(species.size() > 1 && iWill(BREEDING_CROSSOVER_RATE)) { //use crossover on two random individuals
+                int i1 = randomFrontWeightedIndex(species.size(), 0.15f), i2 = 0;
+                //select a i2 which is not the same as i1
+                while((i2 = randomFrontWeightedIndex(species.size(), 0.15f)) == i1);
+                //make i1 the most fit of the two
+                if(i1 < i2) { int t = i1; i1 = i2; i2 = t; }
+
+                Genome p1 = species.getNthMostFit(i1);
+                Genome p2 = species.getNthMostFit(i2);
+                child  = p1.cross(cache, p2);
+            }
+            else { //copy and mutate
+                int i = randomFrontWeightedIndex(species.size(), 0.15f);
+                child = species.getNthMostFit(i).duplicate();
+            }
+            child.mutate(cache);
+            addGenome(newSpeciesList, child, species.speciesID);
+        }
+
+        newSpeciesList.removeIf(s -> s.size() <= 0);
+        return newSpeciesList;
     }
 
 
