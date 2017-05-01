@@ -292,7 +292,6 @@ class DirectEncoding extends Genome {
      * @return A child which is the result of crossing the genomes
      */
     public static DirectEncoding cross(DirectEncodingCache cache, DirectEncoding p1, DirectEncoding p2) {
-        //TODO: only take disjoint or excess from the most fit parent
         //sort based on innovation number
         Comparator<Edge> sortByInnovation = (Edge a, Edge b) -> a.id - b.id;
         p1.edgeGenes.sort(sortByInnovation);
@@ -307,7 +306,6 @@ class DirectEncoding extends Genome {
         Edge e2 = i2.hasNext() ? i2.next() : null;
         while(e1 != null || e2 != null) { //run until we hit the end of both lists
             boolean step1 = false, step2 = false;
-            //TODO: only take disjoint and excess from most fit
             //get the next node, or null if we have reached the end.
             if(e1 != null && e2 == null) { //e1 is an excess node
                 child.edgeGenes.add(new Edge(e1));
