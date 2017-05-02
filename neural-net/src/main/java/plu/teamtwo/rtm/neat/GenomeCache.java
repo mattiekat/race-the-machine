@@ -35,7 +35,7 @@ class DirectEncodingCache extends GenomeCache {
      * @param edge ID of the edge to check if a node was mutated on.
      * @return Array of [nodeID, edgeToID, EdgeFromID], or null if no node was mutated on that edge.
      */
-    int[] getMutatedNodeID(int edge) {
+    int[] getMutatedNode(int edge) {
         int[] vals = mutatedNodes.get(edge);
         return vals == null ? null : Arrays.copyOf(vals, 3);
     }
@@ -48,18 +48,18 @@ class DirectEncodingCache extends GenomeCache {
      * @param to   Ending node of the edge to check for.
      * @return ID of the added edge, or -1 if no edge was mutated between those nodes.
      */
-    int getMutatedEdgeID(int from, int to) {
+    int getMutatedEdge(int from, int to) {
         Integer edge = mutatedEdges.get(hashTwoInts(from, to));
         return edge == null ? -1 : edge;
     }
 
 
-    int getNextNodeID() {
+    int nextNodeID() {
         return nextNodeID++;
     }
 
 
-    int getNextEdgeID() {
+    int nextEdgeID() {
         return nextEdgeID++;
     }
 

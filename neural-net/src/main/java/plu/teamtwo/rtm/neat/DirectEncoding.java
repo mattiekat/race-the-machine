@@ -48,9 +48,9 @@ class DirectEncoding extends Genome {
         DirectEncodingCache cache = (DirectEncodingCache)gCache;
 
         for(int i = 0; i < inputs; ++i)
-            nodeGenes.add(new Node(cache.getNextNodeID(), NodeType.INPUT));
+            nodeGenes.add(new Node(cache.nextNodeID(), NodeType.INPUT));
         for(int i = 0; i < outputs; ++i)
-            nodeGenes.add(new Node(cache.getNextNodeID(), NodeType.OUTPUT));
+            nodeGenes.add(new Node(cache.nextNodeID(), NodeType.OUTPUT));
     }
 
 
@@ -179,12 +179,12 @@ class DirectEncoding extends Genome {
         }
 
         //it does not already exist, check if it has been mutated before, if so, use same ID
-        int id = cache.getMutatedEdgeID(from, to);
+        int id = cache.getMutatedEdge(from, to);
         Edge e;
         if(id >= 0)
             e = new Edge(id, from, to, 1.0f);
         else {
-            e = new Edge(cache.getNextEdgeID(), from, to, 1.0f);
+            e = new Edge(cache.nextEdgeID(), from, to, 1.0f);
             cache.addMutatedEdge(e.id, from, to);
         }
 
@@ -196,12 +196,12 @@ class DirectEncoding extends Genome {
         Edge oldEdge = edgeGenes.get(getRandomNum(0, edgeGenes.size() - 1));
         oldEdge.enabled = false;
 
-        int ids[] = cache.getMutatedNodeID(oldEdge.id);
+        int ids[] = cache.getMutatedNode(oldEdge.id);
         Node newNode; Edge edgeTo, edgeFrom;
         if(ids == null) {
-            newNode = new Node(cache.getNextNodeID(), NodeType.HIDDEN);
-            edgeTo = new Edge(cache.getNextEdgeID(), oldEdge.fromNode, newNode.id, oldEdge.weight);
-            edgeFrom = new Edge(cache.getNextEdgeID(), newNode.id, oldEdge.toNode, 1);
+            newNode = new Node(cache.nextNodeID(), NodeType.HIDDEN);
+            edgeTo = new Edge(cache.nextEdgeID(), oldEdge.fromNode, newNode.id, oldEdge.weight);
+            edgeFrom = new Edge(cache.nextEdgeID(), newNode.id, oldEdge.toNode, 1);
             cache.addMutatedNode(newNode.id, edgeTo.id, edgeFrom.id, oldEdge.id);
         } else {
             newNode = new Node(ids[0], NodeType.HIDDEN);
