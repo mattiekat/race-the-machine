@@ -261,17 +261,22 @@ class DirectEncoding extends Genome {
 
 
     /**
-     * Used for initial members of the first generation to create random edges between the input nodes
-     * and the output nodes. This should not be needed after the first generation.
+     * Used for initial members of the first generation to create connections between the inputs and outputs. This
+     * should not be needed after the first generation. It is reccomended that mutate be called after this function to
+     * give the initial species some variation.
      *
      * @param gCache Cached information about the nodes and edges.
      */
     @Override
     public void initialize(GenomeCache gCache) {
         DirectEncodingCache cache = (DirectEncodingCache) gCache;
-        final int toAdd = getRandomNum(0, nodeGenes.size() / 2);
-        for(int i = 0; i < toAdd; ++i)
-            mutateNewEdge(cache);
+        //create an edge from every input to every output
+        for(Node from : nodeGenes) {
+            for(Node to : nodeGenes) {
+                if(from == to || from.nodeType != NodeType.INPUT || to.nodeType != NodeType.OUTPUT) continue;
+                addEdge(cache, from.id, to.id);
+            }
+        }
     }
 
 
@@ -301,11 +306,11 @@ class DirectEncoding extends Genome {
      * Make random alterations to the genome (i.e. mutations). The primary changes are, 1. altering an edge weight,
      * 2. adding an edge, 3. toggling an edge, and 4. adding a new node.
      *
-     * @param cache Cached information about the nodes and edges.
+     * @param gCache Cached information about the nodes and edges.
      */
     @Override
-    public void mutate(GenomeCache cache) {
-        DirectEncodingCache c = (DirectEncodingCache) cache;
+    public void mutate(GenomeCache gCache) {
+        DirectEncodingCache cache = (DirectEncodingCache) gCache;
 
         //TODO: allow for activation function mutations?
 
@@ -315,12 +320,17 @@ class DirectEncoding extends Genome {
 
         //TODO: allow for multiple new edges or nodes in a single mutation round
         // add an edge
-        if(iWill(MUTATE_NEW_EDGE))
-            mutateNewEdge(c);
+        if(iWill(MUTATE_NEW_EDGE)) {
+            int from = getRandomNum(0, nodeGenes.size() - 1);
+            int to = getRandomNum(0, nodeGenes.size() - 1);
+
+            //add the edge and make sure it is enabled if it was already there.
+            addEdge(cache, from, to).enabled = true;
+        }
 
         //add a node
         if(iWill(MUTATE_NEW_NODE))
-            mutateNewNode(c);
+            addNode(cache, getRandomNum(0, edgeGenes.size() - 1));
 
         for(Edge e : edgeGenes)
             if(iWill(MUTATE_EDGE_TOGGLE))
@@ -342,45 +352,45 @@ class DirectEncoding extends Genome {
 
 
     /**
-     * Create a new, random edge. This will connect two nodes or enable an existing connection between the two randomly
-     * selected nodes.
+     * Add an edge between two nodes. If the node already exists, it will simply be returned. If the node is listed in
+     * the cache, then it will use the same ID.
      *
-     * @param cache Cached information about the nodes and edges.
+     * @param cache    Cached information about the nodes and edges.
+     * @param nodeFrom Origin node for the edge.
+     * @param nodeTo   Termination node for the edge.
+     * @return The edge which was added (or found).
      */
-    private void mutateNewEdge(DirectEncodingCache cache) {
-        int from = getRandomNum(0, nodeGenes.size() - 1);
-        int to = getRandomNum(0, nodeGenes.size() - 1);
-
-        //check if the node already exists, if so, then enable it and return from the function
-        for(Edge e : edgeGenes) {
-            if(e.fromNode == from && e.toNode == to) {
-                e.enabled = true;
-                return;
-            }
-        }
+    private Edge addEdge(DirectEncodingCache cache, int nodeFrom, int nodeTo) {
+        //check if the node already exists
+        for(Edge e : edgeGenes)
+            if(e.fromNode == nodeFrom && e.toNode == nodeTo)
+                return e;
 
         //it does not already exist, check if it has been mutated before, if so, use same ID
-        int id = cache.getMutatedEdge(from, to);
+        int id = cache.getMutatedEdge(nodeFrom, nodeTo);
         Edge e;
         if(id >= 0)
-            e = new Edge(id, from, to, 1.0f);
+            e = new Edge(id, nodeFrom, nodeTo, 1.0f);
         else {
-            e = new Edge(cache.nextEdgeID(), from, to, 1.0f);
-            cache.addMutatedEdge(e.id, from, to);
+            e = new Edge(cache.nextEdgeID(), nodeFrom, nodeTo, 1.0f);
+            cache.addMutatedEdge(e.id, nodeFrom, nodeTo);
         }
 
         edgeGenes.add(e);
+        return e;
     }
 
 
     /**
-     * Create a new node along a random edge. This will create a new node and connect it to the input and ouput nodes of
-     * the edge, and then disable the edge. Thus making the change as minimal as possible.
+     * Create a new node along the specified edge. This will create a new node and connect it to the input and output
+     * nodes of the edge, and then disable the edge. Thus making the change as minimal as possible.
      *
      * @param cache Cached information about the nodes and edges.
+     * @param edge The edge along which to add a node.
+     * @return The node which was added.
      */
-    private void mutateNewNode(DirectEncodingCache cache) {
-        Edge oldEdge = edgeGenes.get(getRandomNum(0, edgeGenes.size() - 1));
+    private Node addNode(DirectEncodingCache cache, int edge) {
+        Edge oldEdge = edgeGenes.get(edge);
         oldEdge.enabled = false;
 
         int ids[] = cache.getMutatedNode(oldEdge.id);
@@ -400,6 +410,7 @@ class DirectEncoding extends Genome {
         nodeGenes.add(newNode);
         edgeGenes.add(edgeTo);
         edgeGenes.add(edgeFrom);
+        return newNode;
     }
 
 

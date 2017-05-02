@@ -49,8 +49,9 @@ abstract class Genome {
 
 
     /**
-     * Used for initial members of the first generation to create random connections between the inputs and outputs.
-     * This should not be needed after the first generation.
+     * Used for initial members of the first generation to create connections between the inputs and outputs. This
+     * should not be needed after the first generation. It is reccomended that mutate be called after this function to
+     * give the initial species some variation.
      *
      * @param cache Cached information about the Genome.
      */
