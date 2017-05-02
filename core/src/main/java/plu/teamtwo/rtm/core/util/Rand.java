@@ -5,8 +5,10 @@ import java.util.Random;
 public class Rand {
     private static final Random random = new Random();
 
+
     /**
      * Used to decide if the code will do something based on a probability.
+     *
      * @param p Chance this will return true.
      * @return A value of true or false with a Bernoulli distribution whose mean is p.
      */
@@ -19,8 +21,9 @@ public class Rand {
 
     /**
      * Generate a random real value.
+     *
      * @param min Minimum value the output can be (inclusive).
-     * @param max Maximum value the output can be (inclusive).
+     * @param max Maximum value the output can be (exclusive).
      * @return A random number in the range [min, max].
      */
     public static float getRandomNum(float min, float max) {
@@ -33,6 +36,7 @@ public class Rand {
 
     /**
      * Generate a random integer value.
+     *
      * @param min Minimum value the output can be (inclusive).
      * @param max Maximum value the output can be (inclusive).
      * @return A random number in the range [min, max].
@@ -43,6 +47,7 @@ public class Rand {
 
         return random.nextInt(max - min + 1) + min;
     }
+
 
     /**
      * A function designed to get the index which should be dropped with a higher probability of dropping larger index
@@ -57,8 +62,8 @@ public class Rand {
      */
     public static int randomBackWeightedIndex(int n, float w) {
         final float x = random.nextFloat();
-        final float b = (float)n * w + 1.0f;
-        return (int)((b - Math.pow(b, 1.0f - x)) / w);
+        final float b = (float) n * w + 1.0f;
+        return (int) ((b - Math.pow(b, 1.0f - x)) / w);
     }
 
 
@@ -75,7 +80,17 @@ public class Rand {
      */
     public static int randomFrontWeightedIndex(int n, float w) {
         final float x = random.nextFloat();
-        final float numerator = (float)(Math.pow(n * w + 1.0f, x) - 1.0f);
-        return (int)(numerator / w);
+        final float numerator = (float) (Math.pow(n * w + 1.0f, x) - 1.0f);
+        return (int) (numerator / w);
+    }
+
+
+    /**
+     * Set the random seed to be used for future calculations.
+     *
+     * @param seed A seed to be used for calculated values.
+     */
+    public static void seedRandom(long seed) {
+        random.setSeed(seed);
     }
 }
