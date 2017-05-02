@@ -49,12 +49,13 @@ abstract class Genome {
 
 
     /**
-     * Used for initial members of the first generation to create random edges between the input nodes
-     * and the output nodes. This should not be needed after the first generation.
+     * Used for initial members of the first generation to create random connections between the inputs and outputs.
+     * This should not be needed after the first generation.
      *
      * @param cache Cached information about the Genome.
      */
     abstract void initialize(GenomeCache cache);
+
 
     /**
      * Create a deep copy of the genome. This will enable the copy to be modified without altering the original.
@@ -63,6 +64,7 @@ abstract class Genome {
      */
     abstract Genome duplicate();
 
+
     /**
      * Used to create a new cache of the appropriate type.
      *
@@ -70,25 +72,44 @@ abstract class Genome {
      */
     abstract GenomeCache createCache();
 
+
+    /**
+     * Make random alterations to the genome (i.e. mutations).
+     *
+     * @param cache Cached information about the genome.
+     */
     abstract void mutate(GenomeCache cache);
 
+
+    /**
+     * Cross the genomes of two parents to create a child. This will take the disjoint and excess genes from the most
+     * fit parent and randomly choose between the matching ones.
+     *
+     * @param cache Cached information about the genome.
+     * @param other The other parent.
+     * @return A child which is the result of crossing the genomes
+     */
     abstract Genome cross(GenomeCache cache, Genome other);
 
     /**
-     * Compute the compatibility distance function δ. The value represents how different this genome is from the other
-     * one by counting the disjoint and excess edges, and the the average difference in the weights.
+     * Compute the compatibility distance function δ. The value represents how different the two genomes are.
      *
      * @param other The genome to compare this one against.
      * @return The compatibility distance.
      */
     abstract float compatibilityDistance(Genome other);
 
+
+    /**
+     * Create a runnable ANN which is represented by the genome.
+     *
+     * @return The ANN represented by the genome.
+     */
     abstract NeuralNetwork getANN();
 
 
     /**
-     * Cross the genomes of two parents to create a child. This will take the disjoint and excess genes from the most
-     * fit parent and randomly choose between the matching ones.
+     * Cross the genomes of two parents to create a child.
      *
      * @param cache Cached information about the genome.
      * @param p1    First parent, the most fit of the two.
@@ -100,6 +121,13 @@ abstract class Genome {
     }
 
 
+    /**
+     * Compute the compatibility distance function δ. The value represents how different the two genomes are.
+     *
+     * @param a First genome.
+     * @param b Second genome.
+     * @return The compatibility distance.
+     */
     static float compatibilityDistance(Genome a, Genome b) {
         return a.compatibilityDistance(b);
     }

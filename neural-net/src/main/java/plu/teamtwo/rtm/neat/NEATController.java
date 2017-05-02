@@ -340,8 +340,6 @@ public class NEATController {
                 int i1 = randomFrontWeightedIndex(species.size(), 0.15f), i2 = 0;
                 //select a i2 which is not the same as i1
                 while((i2 = randomFrontWeightedIndex(species.size(), 0.15f)) == i1);
-                //make i1 the most fit of the two
-                if(i1 < i2) { int t = i1; i1 = i2; i2 = t; }
 
                 Genome p1 = species.getNthMostFit(i1);
                 Genome p2 = species.getNthMostFit(i2);
