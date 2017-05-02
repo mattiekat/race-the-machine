@@ -32,6 +32,7 @@ class DirectEncoding extends Genome {
     private static final float DISTANCE_DISJOINT_COST = 1.0f;
     /// Cost of average weight difference on matching edges (including disabled) in distance function (c3).
     private static final float DISTANCE_WEIGHT_DIFFERENCE_COST = 0.4f;
+
     private List<Node> nodeGenes = new LinkedList<>();
     private List<Edge> edgeGenes = new LinkedList<>();
 
@@ -368,7 +369,7 @@ class DirectEncoding extends Genome {
             cache.addMutatedEdge(e.id, from, to);
         }
 
-        edgeGenes.add(new Edge(id, from, to, 1.0f));
+        edgeGenes.add(e);
     }
 
 
