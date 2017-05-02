@@ -1,16 +1,47 @@
 package plu.teamtwo.rtm.neat;
 
+import org.junit.Test;
+
+import java.io.FileDescriptor;
+import java.io.FileOutputStream;
+import java.io.IOException;
+import java.io.PrintStream;
 import java.util.BitSet;
 
 public class XORTest {
+    private static final int INPUT_PAIRS_PER_ROUND = 1;
+    private static final int TOTAL_ROUNDS = 100;
+
+
+    @Test
+    public void runXORTest() {
+        PrintStream output = new PrintStream(new FileOutputStream(FileDescriptor.out));
+        NEATController controller = new NEATController(
+                Encoding.DIRECT_ENCODING,
+                INPUT_PAIRS_PER_ROUND * 2,
+                INPUT_PAIRS_PER_ROUND
+        );
+
+        controller.createFirstGeneration();
+
+        for(int g = 0; g < 10; ++g) {
+            controller.assesGeneration(new XORScore());
+            //System.out.println(String.format("Gen %d: %f", controller.getGenerationNum(), controller.getFitness()));
+//            try {
+//                NEATController.writeToStream(controller, output);
+//            } catch(IOException e) {
+//                System.err.println(e.getMessage());
+//            }
+            controller.nextGeneration();
+        }
+    }
+
 
     private static class XORScore implements ScoringFunction {
-        public static final int INPUT_PAIRS_PER_ROUND = 1;
-        public static final int TOTAL_ROUNDS = 100;
-
         private int rounds = TOTAL_ROUNDS;
         private int correct = 0;
         private BitSet expected;
+
 
         /**
          * This will be called to determine how many simultaneous instances of the function can exist.
@@ -44,15 +75,15 @@ public class XORTest {
          */
         @Override
         public float[] generateInput() {
-            if(rounds <= 0) return null;
+            if(--rounds < 0) return null;
             float[] inputs = new float[INPUT_PAIRS_PER_ROUND * 2];
             expected = new BitSet(INPUT_PAIRS_PER_ROUND);
 
             for(int i = 0; i < INPUT_PAIRS_PER_ROUND; ++i) {
-                final int j = i*2;
+                final int j = i * 2;
                 inputs[j] = Math.round(Math.random());
-                inputs[j+1] = Math.round(Math.random());
-                expected.set(i, ((int)inputs[j] ^ (int)inputs[j+1]) == 1);
+                inputs[j + 1] = Math.round(Math.random());
+                expected.set(i, ((int) inputs[j] ^ (int) inputs[j + 1]) == 1);
             }
 
             return inputs;
@@ -83,7 +114,7 @@ public class XORTest {
          */
         @Override
         public float getScore() {
-            return (float)Math.pow(correct, 2);
+            return (float) Math.pow(correct, 2);
         }
     }
 }

@@ -253,6 +253,26 @@ public class NEATController {
 
 
     /**
+     * Get the average fitness of all individuals.
+     *
+     * @return The population fitness.
+     */
+    public float getFitness() {
+        return fitness;
+    }
+
+
+    /**
+     * Get the average adjusted fitness of all individuals.
+     *
+     * @return The adjusted population fitness.
+     */
+    public float getAdjFitness() {
+        return adjFitness;
+    }
+
+
+    /**
      * Sort the species by their average individual fitness in descending order such that the most fit species is listed
      * at the head of the list.
      */
