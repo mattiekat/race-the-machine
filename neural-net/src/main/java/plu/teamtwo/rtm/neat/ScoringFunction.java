@@ -5,22 +5,15 @@ package plu.teamtwo.rtm.neat;
  * The function generateInput() will be called until it returns null. For each time that generateInput() is called and
  * does not return null, it will be run through the network and then the output will be passed to acceptOutput(). Once
  * generateInput() returns null, getScore() will be called to determine the fitness of the current individual.
- *
+ * <p>
  * Note that this can be run in a Single Instruction Multiple Data context. The createNew() function will be called once
  * for every individual being scored, so no synchronized handling is necessary within this class unless two conditions
- * are met, 1. static member variables are stored, 2. maxThreads returns a value greater than one.
- *
- * Even if maxThreads returns one, it is not guaranteed that scoring functions will be created on an as-needed basis.
+ * are met, 1. static member variables are stored, 2. getMaxThreads returns a value greater than one.
+ * <p>
+ * Even if getMaxThreads returns one, it is not guaranteed that scoring functions will be created on an as-needed basis.
  * i.e., it is possible that createNew() will be called multiple times before any inputs or outputs are processed.
  */
 public interface ScoringFunction {
-    /**
-     * This will be called to determine how many simultaneous instances of the function can exist.
-     *
-     * @return The maximum number of threads or 0 if there is no reasonable limit.
-     */
-    int maxThreads();
-
     /**
      * This function will be called for once for every individual which is being evaluated. Each scoring function
      * can thus use its own data and know that it will be called with information about only one individual even in a
@@ -29,6 +22,13 @@ public interface ScoringFunction {
      * @return A new scoring function in the initial state.
      */
     ScoringFunction createNew();
+
+    /**
+     * This will be called to determine how many simultaneous instances of the function can exist.
+     *
+     * @return The maximum number of threads or 0 if there is no reasonable limit.
+     */
+    int getMaxThreads();
 
     /**
      * This function will be called to retrieve the inputs which should be used by the network. This will be called

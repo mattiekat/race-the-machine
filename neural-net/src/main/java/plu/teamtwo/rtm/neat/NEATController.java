@@ -148,7 +148,7 @@ public class NEATController {
     public void assesGeneration(ScoringFunction scoringFunction) {
         sorted = false;
         //Construct a new thread pool
-        final int MAX_THREADS = scoringFunction.maxThreads();
+        final int MAX_THREADS = scoringFunction.getMaxThreads();
         ExecutorService threadPool = Executors.newFixedThreadPool(
                 Math.min(
                         MAX_THREADS <= 0 ? 10000 : MAX_THREADS,
