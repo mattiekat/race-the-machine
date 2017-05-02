@@ -157,10 +157,9 @@ public class NEATController {
         );
 
         //submit tasks to be run
-        int id = 0;
         for(Species s : generation)
             for(Genome g : s)
-                threadPool.submit(new GenomeProcessor(id++, g, scoringFunction));
+                threadPool.submit(new GenomeProcessor(g, scoringFunction.createNew()));
 
         //wait for all tasks to finish running
         threadPool.shutdown();
@@ -363,13 +362,11 @@ public class NEATController {
      * A runnable task which will compute the fitness of a Genome using a ScoringFunction.
      */
     private static class GenomeProcessor implements Runnable {
-        private final int id;
         private final Genome genome;
         private final ScoringFunction scoringFunction;
 
 
-        GenomeProcessor(int id, Genome genome, ScoringFunction scoringFunction) {
-            this.id = id;
+        GenomeProcessor(Genome genome, ScoringFunction scoringFunction) {
             this.genome = genome;
             this.scoringFunction = scoringFunction;
         }
@@ -380,12 +377,12 @@ public class NEATController {
             NeuralNetwork network = genome.getANN();
 
             float[] input;
-            while((input = scoringFunction.generateInput(id)) != null) {
+            while((input = scoringFunction.generateInput()) != null) {
                 float[] output = network.calculate(input, false);
-                scoringFunction.acceptOutput(id, output);
+                scoringFunction.acceptOutput(output);
             }
 
-            genome.setFitness(scoringFunction.getScore(id));
+            genome.setFitness(scoringFunction.getScore());
         }
     }
 }
