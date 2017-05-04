@@ -6,7 +6,7 @@ import java.util.*;
 
 class Species implements Iterable<Genome> {
     /// Threshold used in compatibility distance to determine if two individuals are in the same species (δt).
-    private static final float COMPATIBILITY_THRESHOLD = 3.0f;
+    private static final float COMPATIBILITY_THRESHOLD = 2.0f;
 
     final int speciesID;
     final int parentSpeciesID;
@@ -16,7 +16,7 @@ class Species implements Iterable<Genome> {
     private float fitness;
     private float adjFitness;
 
-    /// Highest avg. adjusted fitness this species has ever had.
+    /// Highest avg. fitness this species has ever had.
     private float peakFitness;
     /// Last time the peakFitness was improved upon.
     private int lastImprovement;
@@ -65,6 +65,11 @@ class Species implements Iterable<Genome> {
      */
     Species emptyDuplicate() {
         Species s = new Species(speciesID, parentSpeciesID, appeared);
+
+        s.fitness = fitness;
+        s.adjFitness = adjFitness;
+        s.peakFitness = peakFitness;
+        s.lastImprovement = lastImprovement;
 
         //set rep to random one in this list of members
         if(memebers.size() > 0)
@@ -165,6 +170,17 @@ class Species implements Iterable<Genome> {
 
 
     /**
+     * Drop values from the end of the species, including the value at the index passed in.
+     *
+     * @param i Index of the first value to drop.
+     */
+    void dropEnd(int i) {
+        while(memebers.size() > i)
+            memebers.remove(memebers.size() - 1);
+    }
+
+
+    /**
      * Checks if the compatibility distance between a genome and the representative of the species within the threshold.
      *
      * @param genome Genome to check the compatibility of.
@@ -211,8 +227,8 @@ class Species implements Iterable<Genome> {
         fitness /= (float) memebers.size();
         adjFitness /= (float) memebers.size();
 
-        if(adjFitness > peakFitness) {
-            peakFitness = adjFitness;
+        if(fitness > peakFitness) {
+            peakFitness = fitness;
             lastImprovement = curGen;
         }
     }
@@ -235,7 +251,7 @@ class Species implements Iterable<Genome> {
     void sortByFitness() {
         if(sorted) return;
         //sort in descending order
-        memebers.sort((Genome a, Genome b) -> Math.round(b.getFitness() - a.getFitness()));
+        memebers.sort((Genome a, Genome b) -> (int)(b.getFitness() - a.getFitness()));
         sorted = true;
     }
 }
