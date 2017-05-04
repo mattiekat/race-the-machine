@@ -1,6 +1,10 @@
-package plu.teamtwo.rtm.neat;
+package plu.teamtwo.rtm.expiriments;
 
-import org.junit.Test;
+import com.google.gson.Gson;
+import plu.teamtwo.rtm.neat.Encoding;
+import plu.teamtwo.rtm.neat.Genome;
+import plu.teamtwo.rtm.neat.NEATController;
+import plu.teamtwo.rtm.neat.ScoringFunction;
 
 import java.io.FileDescriptor;
 import java.io.FileOutputStream;
@@ -9,39 +13,40 @@ import java.io.PrintStream;
 import java.util.BitSet;
 
 public class XORTest {
-    private static final int INPUT_PAIRS_PER_ROUND = 1;
     private static final int TOTAL_ROUNDS = 100;
 
-
-    @Test
-    public void runXORTest() {
+    public static void main(String[] args) {
         PrintStream output = new PrintStream(new FileOutputStream(FileDescriptor.out));
         NEATController controller = new NEATController(
                 Encoding.DIRECT_ENCODING,
-                INPUT_PAIRS_PER_ROUND * 2,
-                INPUT_PAIRS_PER_ROUND
+                3, 1
         );
 
         controller.createFirstGeneration();
 
-        for(int g = 0; g < 10; ++g) {
+        for(int g = 0; g < 100; ++g) {
             controller.assesGeneration(new XORScore());
-            //System.out.println(String.format("Gen %d: %f", controller.getGenerationNum(), controller.getFitness()));
-//            try {
-//                NEATController.writeToStream(controller, output);
-//            } catch(IOException e) {
-//                System.err.println(e.getMessage());
-//            }
+            final Genome best = controller.getBestIndividual();
+            System.out.println(String.format("Gen %d: %.2f, %.2f, %.0f", controller.getGenerationNum(), controller.getFitness(), controller.getAdjFitness(), best.getFitness()));
+            if(best.getFitness() >= 99.5f) {
+                Gson gson = new Gson();
+                System.out.println(gson.toJson(best));
+                return;
+            }
             controller.nextGeneration();
         }
+//        try {
+//            NEATController.writeToStream(controller, output);
+//        } catch(IOException e) {
+//            System.err.println(e.getMessage());
+//        }
     }
 
 
     private static class XORScore implements ScoringFunction {
         private int rounds = TOTAL_ROUNDS;
-        private int correct = 0;
-        private BitSet expected;
-
+        private float score = 0;
+        private boolean expected;
 
         /**
          * This will be called to determine how many simultaneous instances of the function can exist.
@@ -76,17 +81,12 @@ public class XORTest {
         @Override
         public float[] generateInput() {
             if(--rounds < 0) return null;
-            float[] inputs = new float[INPUT_PAIRS_PER_ROUND * 2];
-            expected = new BitSet(INPUT_PAIRS_PER_ROUND);
 
-            for(int i = 0; i < INPUT_PAIRS_PER_ROUND; ++i) {
-                final int j = i * 2;
-                inputs[j] = Math.round(Math.random());
-                inputs[j + 1] = Math.round(Math.random());
-                expected.set(i, ((int) inputs[j] ^ (int) inputs[j + 1]) == 1);
-            }
+            float a = Math.round(Math.random());
+            float b = Math.round(Math.random());
+            expected = ((int)a ^ (int)b) == 1;
 
-            return inputs;
+            return new float[]{1.0f, a, b};
         }
 
 
@@ -98,11 +98,9 @@ public class XORTest {
          */
         @Override
         public void acceptOutput(float[] output) {
-            for(int i = 0; i < INPUT_PAIRS_PER_ROUND; i++) {
-                final boolean val = output[i] >= 0.5;
-                if(val == expected.get(i))
-                    correct++;
-            }
+            //score += 1.0f - Math.abs(expected - output[0]);
+            if(output[0] >= 0.5 == expected)
+                score += 1.0f;
         }
 
 
@@ -114,7 +112,7 @@ public class XORTest {
          */
         @Override
         public float getScore() {
-            return (float) Math.pow(correct, 2);
+            return score;
         }
     }
 }
