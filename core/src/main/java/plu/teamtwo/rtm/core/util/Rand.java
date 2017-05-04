@@ -27,7 +27,7 @@ public class Rand {
      * @return A random number in the range [min, max].
      */
     public static float getRandomNum(float min, float max) {
-        if(min >= max)
+        if(min > max)
             throw new IllegalArgumentException("Max must be greater than min");
 
         return random.nextFloat() * (max - min) + min;
@@ -42,7 +42,7 @@ public class Rand {
      * @return A random number in the range [min, max].
      */
     public static int getRandomNum(int min, int max) {
-        if(min >= max)
+        if(min > max)
             throw new IllegalArgumentException("Max must be greater than min");
 
         return random.nextInt(max - min + 1) + min;
