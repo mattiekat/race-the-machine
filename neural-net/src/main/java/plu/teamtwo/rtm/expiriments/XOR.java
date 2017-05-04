@@ -10,9 +10,8 @@ import java.io.FileDescriptor;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.PrintStream;
-import java.util.BitSet;
 
-public class XORTest {
+public class XOR {
     private static final int TOTAL_ROUNDS = 100;
 
     public static void main(String[] args) {
