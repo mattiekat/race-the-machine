@@ -27,9 +27,9 @@ class DirectEncoding extends Genome {
     /// Amount up or down an edge weight can be stepped.
     private static final float EDGE_WEIGHT_STEP_MAX = 2.0f;
     /// Cost of having excess nodes on distance function (c1).
-    private static final float DISTANCE_EXCESS_COST = 1.0f;
+    private static final float DISTANCE_EXCESS_COST = 2.0f;
     /// Cost of having disjoint nodes in distance function (c2).
-    private static final float DISTANCE_DISJOINT_COST = 1.0f;
+    private static final float DISTANCE_DISJOINT_COST = 2.0f;
     /// Cost of average weight difference on matching edges (including disabled) in distance function (c3).
     private static final float DISTANCE_WEIGHT_DIFFERENCE_COST = 0.4f;
 
@@ -106,6 +106,8 @@ class DirectEncoding extends Genome {
             p2 = t;
         }
 
+        final boolean equal = p1.getFitness() == p2.getFitness();
+
         //sort based on innovation number
         Comparator<Edge> sortByInnovation = (Edge a, Edge b) -> a.id - b.id;
         p1.edgeGenes.sort(sortByInnovation);
@@ -124,8 +126,10 @@ class DirectEncoding extends Genome {
             if(e1 != null && e2 == null) { //e1 is an excess node
                 child.edgeGenes.add(new Edge(e1));
                 step1 = true;
-            } else if(e1 == null && e2 != null) //e2 is an excess node
+            } else if(e1 == null && e2 != null) { //e2 is an excess node
+                if(equal) child.edgeGenes.add(new Edge(e2));
                 step2 = true;
+            }
             else if(e1.id < e2.id) { //e1 is a disjoint node
                 child.edgeGenes.add(new Edge(e1));
                 step1 = true;
@@ -141,8 +145,10 @@ class DirectEncoding extends Genome {
                 //add the new edge to the list
                 child.edgeGenes.add(edge);
                 step1 = step2 = true;
-            } else // e1.id > e2.id //e2 is a disjoint node
+            } else { // e1.id > e2.id //e2 is a disjoint node
+                if(equal) child.edgeGenes.add(new Edge(e2));
                 step2 = true;
+            }
 
             if(step1) e1 = i1.hasNext() ? i1.next() : null;
             if(step2) e2 = i2.hasNext() ? i2.next() : null;
@@ -488,6 +494,7 @@ class DirectEncoding extends Genome {
             net.connect(findIndex.apply(e.fromNode), findIndex.apply(e.toNode), e.weight);
         }
 
+        net.validate();
         return net;
     }
 }
