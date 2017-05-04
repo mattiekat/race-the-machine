@@ -76,7 +76,7 @@ public class NeuralNetwork {
             throw new IllegalStateException("Cannot modify Neurons once the ANN has been validated.");
 
         //if any of the indices are invalid, do nothing
-        if((from | to) >= neurons.length || (from | to) < 0)
+        if(from >= neurons.length || to >= neurons.length || from < 0 || to < 0)
             return false;
 
         return neurons[from].outputs.add(new Dendrite(to, weight));
