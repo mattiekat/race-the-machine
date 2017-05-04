@@ -9,9 +9,6 @@ import static plu.teamtwo.rtm.core.util.Rand.*;
 import java.io.*;
 import java.security.InvalidParameterException;
 import java.util.*;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
-import java.util.concurrent.TimeUnit;
 
 /**
  * The over-arching controller for the NEAT algorithm. Note that this is not designed to be called from multiple
@@ -20,8 +17,6 @@ import java.util.concurrent.TimeUnit;
 public class NEATController {
     /// Size of the total population.
     private static final int POPULATION_SIZE = 150;
-    /// Number of generations a new species can show no improvement for.
-    private static final int NEW_SPECIES_SAFE_PERIOD = 15;
     /// Number of generations a species can show no improvement before being removed.
     private static final int GENERATIONS_BEFORE_REMOVAL = 15;
     /// Minimum number of new members in the next generation of a species which has not been removed.
@@ -32,8 +27,10 @@ public class NEATController {
     private static final int SPECIES_SIZE_TO_PROTECT_LEADER = 5;
     /// Percent of children in the next generation which are produced by crossover.
     private static final float BREEDING_CROSSOVER_RATE = 0.75f;
-    /// The percentage of the species to drop; uses floor function, so in small species less will be dropped.
-    private static final float BREEDING_DROP_RATE = 0.20f;
+    /// The percentage of a species which will make it to the breeding phase.
+    private static final float BREEDING_SURVIVAL_THRESHOLD = 0.20f;
+    /// Desired number of species.
+    private static final int TARGET_NUMBER_OF_SPECIES = 5;
 
     public final Encoding encoding;
     private final int inputs;
@@ -135,6 +132,7 @@ public class NEATController {
         for(int x = 0; x < POPULATION_SIZE; ++x) {
             Genome g = base.duplicate();
             g.initialize(cache);
+            g.mutate(cache);
             addGenome(generation, g, -1);
         }
     }
@@ -149,32 +147,37 @@ public class NEATController {
         sorted = false;
         //Construct a new thread pool
         final int MAX_THREADS = scoringFunction.getMaxThreads();
-        ExecutorService threadPool = Executors.newFixedThreadPool(
-                Math.min(
-                        MAX_THREADS <= 0 ? 10000 : MAX_THREADS,
-                        Runtime.getRuntime().availableProcessors() * 2
-                )
-        );
+//        ExecutorService threadPool = Executors.newFixedThreadPool(
+//                Math.min(
+//                        MAX_THREADS <= 0 ? 10000 : MAX_THREADS,
+//                        Runtime.getRuntime().availableProcessors() * 2
+//                )
+//        );
 
         //submit tasks to be run
-        for(Species s : generation)
-            for(Genome g : s)
-                threadPool.submit(new GenomeProcessor(g, scoringFunction.createNew()));
+        for(Species s : generation) {
+            for(Genome g : s) {
+                //threadPool.submit(new GenomeProcessor(g, scoringFunction.createNew()));
+                GenomeProcessor p = new GenomeProcessor(g, scoringFunction.createNew());
+                p.run();
+            }
+        }
 
         //wait for all tasks to finish running
-        threadPool.shutdown();
-        try {
-            while(!threadPool.awaitTermination(1, TimeUnit.MINUTES))
-                /*Keep waiting*/ ;
-        } catch(InterruptedException e) {
-            threadPool.shutdownNow();
-        }
+//        threadPool.shutdown();
+//        try {
+//            while(!threadPool.awaitTermination(1, TimeUnit.MINUTES))
+//                /*Keep waiting*/ ;
+//        } catch(InterruptedException e) {
+//            threadPool.shutdownNow();
+//        }
 
         //Adjust the fitness values
         for(Species s : generation)
             s.adjustFitnessValues(generationNum);
 
         calculateFitness();
+        sortByFitness();
     }
 
 
@@ -189,10 +192,9 @@ public class NEATController {
 
         //remove any non-improving species
         generation.removeIf(s ->
-            //must be out of safe period
-            (generationNum - s.appeared) >= NEW_SPECIES_SAFE_PERIOD &&
+            (generation.size() > TARGET_NUMBER_OF_SPECIES) &&
             //remove if it has not improved in a while
-            (s.getLastImprovement() - generationNum) > GENERATIONS_BEFORE_REMOVAL
+            (generationNum - s.getLastImprovement()) > GENERATIONS_BEFORE_REMOVAL
         );
 
         //make sure every species gets a members in the next generation
@@ -202,7 +204,7 @@ public class NEATController {
         int bred = generation.size() * MINIMUM_BREEDING_ALLOWANCE;
 
         final float globalAdjFitnessSum = adjFitness * (float)POPULATION_SIZE;
-        final int allowanceAfterGuarantee = Math.min(POPULATION_SIZE - bred, 0);
+        final int allowanceAfterGuarantee = Math.max(POPULATION_SIZE - bred, 0);
 
         if(allowanceAfterGuarantee == 0) {
             System.err.println("Warning: generation " + generationNum + " may exceed population size due to the " +
@@ -214,13 +216,14 @@ public class NEATController {
         // (SpeciesAvgAdjFitness * NumSpeciesMembers) / GlobalAvgAdjFitness = BreedingAllowance
         for(int i = 0; i < generation.size(); ++i) {
             final Species s = generation.get(i);
-            allowances[i] = (int) ((s.getAdjFitness() * s.size() * (float)allowanceAfterGuarantee) / globalAdjFitnessSum);
-            bred += allowances[i];
+            final int amount = (int) ((s.getAdjFitness() * s.size() * (float)allowanceAfterGuarantee) / globalAdjFitnessSum);
+            allowances[i] += amount;
+            bred += amount;
         }
 
         //since we floor the value, randomly assign any remaining
         //TODO: use function to favor higher-performing species?
-        while(allowanceAfterGuarantee - bred > 0) {
+        while(POPULATION_SIZE - bred > 0) {
             final int species = getRandomNum(0, allowances.length - 1);
             allowances[species]++;
             bred++;
@@ -279,7 +282,11 @@ public class NEATController {
     private void sortByFitness() {
         if(sorted) return;
         //sort descending
-        generation.sort( (Species a, Species b) -> Math.round(b.getAdjFitness() - a.getAdjFitness()) );
+        try {
+            generation.sort((Species a, Species b) -> (int) (b.getAdjFitness() - a.getAdjFitness()));
+        } catch(IllegalArgumentException e) {
+            System.err.println(e.getMessage());
+        }
         for(Species s : generation)
             s.sortByFitness();
         sorted = true;
@@ -335,40 +342,44 @@ public class NEATController {
 
         //will we protect the leader
         if(offspring >= SPECIES_SIZE_TO_PROTECT_LEADER) {
-            addGenome(newSpeciesList, species.getChampion(), species.speciesID);
+            addGenome(newSpeciesList, species.getChampion().duplicate(), species.speciesID);
             offspring--;
         }
 
-        //TODO: do we need to drop off the back? We can just use a greater weight in selecting next generation...
-        { //drop the "bottom performers" using a probability distribution function which maps from [0,1] to [0, size - 1]
-            int numToDrop = (int) (species.size() * BREEDING_DROP_RATE);
-            if(species.size() - numToDrop <= 0) {
-                System.err.println("BREEDING_DROP_RATE is too high.");
-                numToDrop = species.size() - 2;
-            }
-            for(int i = 0; i < numToDrop; ++i)
-                species.removeNthMostFit(
-                        randomBackWeightedIndex(species.size(), 10.0f)
-                );
+//        { //drop the "bottom performers" using a probability distribution function which maps from [0,1] to [0, size - 1]
+//            int numToDrop = (int) (species.size() * BREEDING_SURVIVAL_THRESHOLD);
+//            if(species.size() - numToDrop <= 0) {
+//                System.err.println("BREEDING_SURVIVAL_THRESHOLD is too high.");
+//                numToDrop = species.size() - 2;
+//            }
+//            for(int i = 0; i < numToDrop; ++i)
+//                species.removeNthMostFit(
+//                        randomBackWeightedIndex(species.size(), 10.0f)
+//                );
+//        }
+
+        { //Drop anyone below the survival threshold
+            final int numToKeep = Math.max((int)(species.size() * BREEDING_SURVIVAL_THRESHOLD), 1);
+            species.dropEnd(numToKeep);
         }
 
         //create the children
         while(offspring-- > 0) {
             Genome child = null;
             if(species.size() > 1 && iWill(BREEDING_CROSSOVER_RATE)) { //use crossover on two random individuals
-                int i1 = randomFrontWeightedIndex(species.size(), 0.15f), i2 = 0;
+                int i1 = getRandomNum(0, species.size() - 1), i2 = 0;
                 //select a i2 which is not the same as i1
-                while((i2 = randomFrontWeightedIndex(species.size(), 0.15f)) == i1);
+                while((i2 = getRandomNum(0, species.size() - 1)) == i1);
 
                 Genome p1 = species.getNthMostFit(i1);
                 Genome p2 = species.getNthMostFit(i2);
                 child  = p1.cross(cache, p2);
             }
             else { //copy and mutate
-                int i = randomFrontWeightedIndex(species.size(), 0.15f);
+                int i = getRandomNum(0, species.size() - 1);
                 child = species.getNthMostFit(i).duplicate();
+                child.mutate(cache);
             }
-            child.mutate(cache);
             addGenome(newSpeciesList, child, species.speciesID);
         }
 
@@ -376,6 +387,20 @@ public class NEATController {
         return newSpeciesList;
     }
 
+
+    /**
+     * Get the best individual in the current generation.
+     * @return The best individual in the current generation.
+     */
+    public Genome getBestIndividual() {
+        sortByFitness();
+        Genome best = generation.get(0).getChampion();
+        for(int i = 1; i < generation.size(); ++i) {
+            Genome other = generation.get(i).getChampion();
+            best = best.getFitness() > other.getFitness() ? best : other;
+        }
+        return best;
+    }
 
 
     /**
