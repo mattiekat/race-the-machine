@@ -23,7 +23,7 @@ public class XOR {
 
         controller.createFirstGeneration();
 
-        for(int g = 0; g < 100; ++g) {
+        for(int g = 0; g < 200; ++g) {
             controller.assesGeneration(new XORScore());
             final Genome best = controller.getBestIndividual();
             System.out.println(String.format("Gen %d: %.2f, %.2f, %.0f", controller.getGenerationNum(), controller.getFitness(), controller.getAdjFitness(), best.getFitness()));

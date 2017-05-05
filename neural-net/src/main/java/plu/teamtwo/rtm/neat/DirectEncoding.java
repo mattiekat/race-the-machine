@@ -20,6 +20,8 @@ class DirectEncoding extends Genome {
     private static final float MUTATE_NEW_NODE = 0.03f;
     /// Chance for an edge's enabled status to be flipped.
     private static final float MUTATE_EDGE_TOGGLE = 0.03f;
+    /// True if the genome is allowed to mutate recurrent edges
+    private static final boolean MUTATE_RECURRENT_EDGES = false;
     /// Chance to disable an edge if either parent had it disabled.
     private static final float CROSS_DISABLE_EDGE = 0.75f;
     /// Absolute value of the initial range for an edge weight.
@@ -33,8 +35,8 @@ class DirectEncoding extends Genome {
     /// Cost of average weight difference on matching edges (including disabled) in distance function (c3).
     private static final float DISTANCE_WEIGHT_DIFFERENCE_COST = 0.4f;
 
-    private List<Node> nodeGenes = new LinkedList<>();
-    private List<Edge> edgeGenes = new LinkedList<>();
+    private NavigableMap<Integer, Node> nodeGenes = new TreeMap<>();
+    private NavigableMap<Integer, Edge> edgeGenes = new TreeMap<>();
 
 
     /**
@@ -49,10 +51,14 @@ class DirectEncoding extends Genome {
             throw new InvalidParameterException("Inputs and outputs must be greater than 0.");
         DirectEncodingCache cache = (DirectEncodingCache) gCache;
 
-        for(int i = 0; i < inputs; ++i)
-            nodeGenes.add(new Node(cache.nextNodeID(), NodeType.INPUT));
-        for(int i = 0; i < outputs; ++i)
-            nodeGenes.add(new Node(cache.nextNodeID(), NodeType.OUTPUT));
+        for(int i = 0; i < inputs; ++i) {
+            final Node n = new Node(cache.nextNodeID(), NodeType.INPUT);
+            nodeGenes.put(n.id, n);
+        }
+        for(int i = 0; i < outputs; ++i) {
+            final Node n = new Node(cache.nextNodeID(), NodeType.OUTPUT);
+            nodeGenes.put(n.id, n);
+        }
     }
 
 
@@ -62,10 +68,10 @@ class DirectEncoding extends Genome {
      * @param other DirectEncoding to copy.
      */
     DirectEncoding(DirectEncoding other) {
-        for(Node n : other.nodeGenes)
-            nodeGenes.add(new Node(n));
-        for(Edge e : other.edgeGenes)
-            this.edgeGenes.add(new Edge(e));
+        for(Node n : other.nodeGenes.values())
+            nodeGenes.put(n.id, new Node(n));
+        for(Edge e : other.edgeGenes.values())
+            edgeGenes.put(e.id, new Edge(e));
     }
 
 
@@ -85,7 +91,7 @@ class DirectEncoding extends Genome {
     private DirectEncoding(Collection<Node> nodes) {
         for(Node n : nodes)
             if(n.nodeType == NodeType.INPUT || n.nodeType == NodeType.OUTPUT)
-                nodeGenes.add(new Node(n));
+                nodeGenes.put(n.id, new Node(n));
     }
 
 
@@ -108,15 +114,11 @@ class DirectEncoding extends Genome {
 
         final boolean equal = p1.getFitness() == p2.getFitness();
 
-        //sort based on innovation number
-        Comparator<Edge> sortByInnovation = (Edge a, Edge b) -> a.id - b.id;
-        p1.edgeGenes.sort(sortByInnovation);
-        p2.edgeGenes.sort(sortByInnovation);
-
         //go through both parents and line up innovation numbers
+        // always sorted because it is a TreeSet
         DirectEncoding child = new DirectEncoding();
-        Iterator<Edge> i1 = p1.edgeGenes.iterator();
-        Iterator<Edge> i2 = p2.edgeGenes.iterator();
+        Iterator<Edge> i1 = p1.edgeGenes.values().iterator();
+        Iterator<Edge> i2 = p2.edgeGenes.values().iterator();
 
         Edge e1 = i1.hasNext() ? i1.next() : null;
         Edge e2 = i2.hasNext() ? i2.next() : null;
@@ -124,14 +126,14 @@ class DirectEncoding extends Genome {
             boolean step1 = false, step2 = false;
             //get the next node, or null if we have reached the end.
             if(e1 != null && e2 == null) { //e1 is an excess node
-                child.edgeGenes.add(new Edge(e1));
+                child.edgeGenes.put(e1.id, new Edge(e1));
                 step1 = true;
             } else if(e1 == null && e2 != null) { //e2 is an excess node
-                if(equal) child.edgeGenes.add(new Edge(e2));
+                if(equal) child.edgeGenes.put(e2.id, new Edge(e2));
                 step2 = true;
             }
             else if(e1.id < e2.id) { //e1 is a disjoint node
-                child.edgeGenes.add(new Edge(e1));
+                child.edgeGenes.put(e1.id, new Edge(e1));
                 step1 = true;
             } else if(e1.id == e2.id) {
                 //select edge at random
@@ -143,10 +145,10 @@ class DirectEncoding extends Genome {
                         edge.enabled = false;
 
                 //add the new edge to the list
-                child.edgeGenes.add(edge);
+                child.edgeGenes.put(edge.id, edge);
                 step1 = step2 = true;
             } else { // e1.id > e2.id //e2 is a disjoint node
-                if(equal) child.edgeGenes.add(new Edge(e2));
+                if(equal) child.edgeGenes.put(e2.id, new Edge(e2));
                 step2 = true;
             }
 
@@ -156,7 +158,7 @@ class DirectEncoding extends Genome {
 
         //Find what nodes are used
         BitSet discovered = new BitSet();
-        for(Edge e : child.edgeGenes) {
+        for(Edge e : child.edgeGenes.values()) {
             discovered.set(e.toNode);
             discovered.set(e.fromNode);
         }
@@ -164,17 +166,11 @@ class DirectEncoding extends Genome {
         //add nodes which are used by the child from either parent (must go through both lists)
         // we make the assumption that both have the same input and output nodes, so just copy
         // from the first parent.
-        for(Node n : p1.nodeGenes) {
-            if(n.nodeType == NodeType.INPUT || n.nodeType == NodeType.OUTPUT || discovered.get(n.id)) {
-                child.nodeGenes.add(new Node(n));
-                discovered.set(n.id, false);
-            }
-        }
-        for(Node n : p2.nodeGenes) {
-            if(discovered.get(n.id)) {
-                child.nodeGenes.add(new Node(n));
-                discovered.set(n.id, false);
-            }
+        for(int i = discovered.nextSetBit(0); i >= 0; i = discovered.nextSetBit(i+1)) {
+            Node n = p1.nodeGenes.get(i);
+            if(n == null) n = p2.nodeGenes.get(i);
+            if(n == null) throw new IllegalArgumentException("In DirectEncoding cross, one of the parents had an edge for which it did not have the corresponding nodes.");
+            child.nodeGenes.put(n.id, new Node(n));
         }
 
         return child;
@@ -190,14 +186,10 @@ class DirectEncoding extends Genome {
      * @return The compatibility distance.
      */
     public static float compatibilityDistance(DirectEncoding d1, DirectEncoding d2) {
-        //sort based on innovation number
-        Comparator<Edge> sortByInnovation = (Edge a, Edge b) -> a.id - b.id;
-        d1.edgeGenes.sort(sortByInnovation);
-        d2.edgeGenes.sort(sortByInnovation);
-
         //go through both parents and line up innovation numbers
-        Iterator<Edge> i1 = d1.edgeGenes.iterator();
-        Iterator<Edge> i2 = d2.edgeGenes.iterator();
+        // always sorted because it is a TreeSet
+        Iterator<Edge> i1 = d1.edgeGenes.values().iterator();
+        Iterator<Edge> i2 = d2.edgeGenes.values().iterator();
 
         Edge e1 = i1.hasNext() ? i1.next() : null;
         Edge e2 = i2.hasNext() ? i2.next() : null;
@@ -277,8 +269,8 @@ class DirectEncoding extends Genome {
     public void initialize(GenomeCache gCache) {
         DirectEncodingCache cache = (DirectEncodingCache) gCache;
         //create an edge from every input to every output
-        for(Node from : nodeGenes) {
-            for(Node to : nodeGenes) {
+        for(Node from : nodeGenes.values()) {
+            for(Node to : nodeGenes.values()) {
                 if(from == to || from.nodeType != NodeType.INPUT || to.nodeType != NodeType.OUTPUT) continue;
                 addEdge(cache, from.id, to.id);
             }
@@ -321,26 +313,120 @@ class DirectEncoding extends Genome {
         //TODO: allow for activation function mutations?
 
         if(iWill(MUTATE_EDGE_WEIGHTS))
-            for(Edge e : edgeGenes)
+            for(Edge e : edgeGenes.values())
                 mutateWeight(e);
 
         //TODO: allow for multiple new edges or nodes in a single mutation round
         // add an edge
-        if(iWill(MUTATE_NEW_EDGE)) {
-            int from = getRandomNum(0, nodeGenes.size() - 1);
-            int to = getRandomNum(0, nodeGenes.size() - 1);
-
-            //add the edge and make sure it is enabled if it was already there.
-            addEdge(cache, from, to).enabled = true;
-        }
+        if(iWill(MUTATE_NEW_EDGE))
+            mutateEdge(cache);
 
         //add a node
         if(iWill(MUTATE_NEW_NODE))
-            addNode(cache, getRandomNum(0, edgeGenes.size() - 1));
+            mutateNode(cache);
 
-        for(Edge e : edgeGenes)
+        for(Edge e : edgeGenes.values())
             if(iWill(MUTATE_EDGE_TOGGLE))
                 e.enabled = !e.enabled;
+    }
+
+
+    /**
+     * Mutates a new node along a random edge.
+     * @param cache
+     */
+    private void mutateNode(DirectEncodingCache cache) {
+        final int index = getRandomNum(0, edgeGenes.size() - 1);
+        final int edge = edgeIndexToID(index);
+        addNode(cache, edge);
+    }
+
+
+    /**
+     * Mutate a new edge between two random nodes.
+     *
+     * @param cache Cached information about the nodes and edges.
+     */
+    private void mutateEdge(DirectEncodingCache cache) {
+        int from, to;
+        do {
+            final int fromIndex = getRandomNum(0, nodeGenes.size() - 1);
+            final int toIndex = getRandomNum(0, nodeGenes.size() - 1);
+            from = nodeIndexToID(fromIndex);
+            to = nodeIndexToID(toIndex);
+        } while(!MUTATE_RECURRENT_EDGES && isRecurrent(from, to));
+
+        //add the edge and make sure it is enabled if it was already there.
+        addEdge(cache, from, to).enabled = true;
+    }
+
+
+    /**
+     * Checks if after adding an edge between two nodes the graph would be recurrent. Note that this will always return
+     * true if there was already a cycle in the graph no matter the connection which is added.
+     * TODO: store information about which edges are recurrent so we can ignore those and figure out which new ones would be?
+     *
+     * @param from Starting node of the edge.
+     * @param to   Ending node of the edge.
+     * @return True if the graph has a cycle after the new edge is added.
+     */
+    private boolean isRecurrent(int from, int to) {
+        BitSet gray = new BitSet();
+        BitSet black = new BitSet();
+
+        //start from all input nodes
+        for(Node n : nodeGenes.values()) {
+            if(n.nodeType == NodeType.INPUT) {
+                if(isRecurrent(n.id, from, to, gray, black)) return true;
+            }
+        }
+
+        return false;
+    }
+
+
+    /**
+     * Perform DFS to check if the graph is cyclic given an extra edge not in the edge list. This will consider a
+     * connection to an input node as recurrent.
+     * @param node  ID of the current node.
+     * @param from  ID of the starting node for then new edge.
+     * @param to    ID of the ending node for the new edge.
+     * @param gray  Set of grey nodes.
+     * @param black Set of back nodes.
+     * @return True if the graph is cyclic or connecting to an input, otherwise false.
+     */
+    private boolean isRecurrent(int node, int from, int to, BitSet gray, BitSet black) {
+        //visit the node
+        gray.set(node);
+
+        boolean foundEdge = false;
+        //go through edge genes
+        for(Edge e : edgeGenes.values()) {
+            if(e.fromNode == node) {
+                //recurrent if it is part of our past or if it is an input node
+                if(gray.get(e.toNode) || nodeGenes.get(e.toNode).nodeType == NodeType.INPUT)
+                    return true;
+                //if it is not already processed, perform DFS on it
+                if(!black.get(e.toNode) && isRecurrent(e.toNode, from, to, gray, black))
+                    return true;
+            }
+            //will not need to handle the extra edge
+            if(e.fromNode == from && e.toNode == to) foundEdge = true;
+        }
+        //treat from and to as an extra edge
+        if(from == node && !foundEdge) { //prevent returning true if there is another identical edge
+            //recurrent if it is part of our past or if it is an input node
+            if(gray.get(to) || nodeGenes.get(to).nodeType == NodeType.INPUT)
+                return true;
+            //if it is not already processed, perform DFS on it
+            if(!black.get(to) && isRecurrent(to, from, to, gray, black))
+                return true;
+        }
+
+        //leave this node
+        gray.set(node, false);
+        black.set(node);
+        return false;
     }
 
 
@@ -358,7 +444,7 @@ class DirectEncoding extends Genome {
 
 
     /**
-     * Add an edge between two nodes. If the node already exists, it will simply be returned. If the node is listed in
+     * Add an edge between two nodes. If the edge already exists, it will simply be returned. If the edge is listed in
      * the cache, then it will use the same ID.
      *
      * @param cache    Cached information about the nodes and edges.
@@ -367,8 +453,8 @@ class DirectEncoding extends Genome {
      * @return The edge which was added (or found).
      */
     private Edge addEdge(DirectEncodingCache cache, int nodeFrom, int nodeTo) {
-        //check if the node already exists
-        for(Edge e : edgeGenes)
+        //check if the edge already exists
+        for(Edge e : edgeGenes.values())
             if(e.fromNode == nodeFrom && e.toNode == nodeTo)
                 return e;
 
@@ -382,7 +468,7 @@ class DirectEncoding extends Genome {
             cache.addMutatedEdge(e.id, nodeFrom, nodeTo);
         }
 
-        edgeGenes.add(e);
+        edgeGenes.put(e.id, e);
         return e;
     }
 
@@ -413,10 +499,36 @@ class DirectEncoding extends Genome {
             edgeFrom = new Edge(ids[2], newNode.id, oldEdge.toNode, 1);
         }
 
-        nodeGenes.add(newNode);
-        edgeGenes.add(edgeTo);
-        edgeGenes.add(edgeFrom);
+        nodeGenes.put(newNode.id, newNode);
+        edgeGenes.put(edgeTo.id, edgeTo);
+        edgeGenes.put(edgeFrom.id, edgeFrom);
         return newNode;
+    }
+
+
+    /**
+     * Get the nth edge from edge genes.
+     * @param index Index from edgeGenes to get the ID of.
+     * @return ID of the edge at index.
+     */
+    private int edgeIndexToID(int index) {
+        int i = 0;
+        for(Edge e : edgeGenes.values())
+            if(i++ == index) return e.id;
+        return -1;
+    }
+
+
+    /**
+     * Get the nth node from node genes.
+     * @param index Index from nodeGenes to get the ID of.
+     * @return ID of the node at index.
+     */
+    private int nodeIndexToID(int index) {
+        int i = 0;
+        for(Node n : nodeGenes.values())
+            if(i++ == index) return n.id;
+        return -1;
     }
 
 
@@ -437,7 +549,7 @@ class DirectEncoding extends Genome {
         List<Edge> edges = new LinkedList<Edge>();
 
         //create a
-        for(Node n : nodeGenes) {
+        for(Node n : nodeGenes.values()) {
             switch(n.nodeType) {
                 case INPUT:
                     inputs.add(n);
@@ -452,7 +564,7 @@ class DirectEncoding extends Genome {
         }
 
         //add all the connections to a list
-        for(Edge e : edgeGenes)
+        for(Edge e : edgeGenes.values())
             if(e.enabled)
                 edges.add(e);
 
