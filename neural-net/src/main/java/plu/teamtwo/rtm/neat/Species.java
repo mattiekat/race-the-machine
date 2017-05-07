@@ -6,7 +6,7 @@ import java.util.*;
 
 class Species implements Iterable<Genome> {
     /// Threshold used in compatibility distance to determine if two individuals are in the same species (δt).
-    private static final float COMPATIBILITY_THRESHOLD = 2.0f;
+    private static final float COMPATIBILITY_THRESHOLD = 3.0f;
 
     final int speciesID;
     final int parentSpeciesID;

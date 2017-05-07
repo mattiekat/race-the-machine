@@ -15,11 +15,13 @@ class DirectEncoding extends Genome {
     /// Chance that an edge weight which is being mutated will be reinitialized.
     private static final float MUTATE_RESET_WEIGHT = 0.10f;
     /// Chance for a new edge to be added to the system.
-    private static final float MUTATE_NEW_EDGE = 0.1f;
+    private static final float MUTATE_NEW_EDGE = 0.05f;
+    // Number of times it should try to mutate a new edge
+    private static final int MUTATE_NEW_EDGE_TRIES = 20;
     /// Chance for a node to be added to the system.
-    private static final float MUTATE_NEW_NODE = 0.1f;
+    private static final float MUTATE_NEW_NODE = 0.03f;
     /// Chance for an edge's enabled status to be flipped.
-    private static final float MUTATE_EDGE_TOGGLE = 0.03f;
+    private static final float MUTATE_EDGE_TOGGLE = 0.0f;
     /// True if the genome is allowed to mutate recurrent edges
     private static final boolean MUTATE_RECURRENT_EDGES = false;
     /// Chance to disable an edge if either parent had it disabled.
@@ -29,9 +31,9 @@ class DirectEncoding extends Genome {
     /// Amount up or down an edge weight can be stepped.
     private static final float EDGE_WEIGHT_STEP_MAX = 2.0f;
     /// Cost of having excess nodes on distance function (c1).
-    private static final float DISTANCE_EXCESS_COST = 2.0f;
+    private static final float DISTANCE_EXCESS_COST = 1.0f;
     /// Cost of having disjoint nodes in distance function (c2).
-    private static final float DISTANCE_DISJOINT_COST = 2.0f;
+    private static final float DISTANCE_DISJOINT_COST = 1.0f;
     /// Cost of average weight difference on matching edges (including disabled) in distance function (c3).
     private static final float DISTANCE_WEIGHT_DIFFERENCE_COST = 0.4f;
 
@@ -223,7 +225,7 @@ class DirectEncoding extends Genome {
         }
         matchingDiff /= (float) matching;
 
-        final float n = disjoint + excess + matching;
+        final float n = 1.0f; //disjoint + excess + matching; //TODO: re-enable normalizing the distance?
         float distance = matchingDiff * DISTANCE_WEIGHT_DIFFERENCE_COST;
         distance += ((float) excess / n) * DISTANCE_EXCESS_COST;
         distance += ((float) disjoint / n) * DISTANCE_DISJOINT_COST;
@@ -348,16 +350,18 @@ class DirectEncoding extends Genome {
      * @param cache Cached information about the nodes and edges.
      */
     private void mutateEdge(DirectEncodingCache cache) {
-        int from, to;
-        do {
-            final int fromIndex = getRandomNum(0, nodeGenes.size() - 1);
-            final int toIndex = getRandomNum(0, nodeGenes.size() - 1);
-            from = nodeIndexToID(fromIndex);
-            to = nodeIndexToID(toIndex);
-        } while(!MUTATE_RECURRENT_EDGES && isRecurrent(from, to));
+        for(int x = 0; x < MUTATE_NEW_EDGE_TRIES; ++x) {
+            int from, to;
+            do {
+                final int fromIndex = getRandomNum(0, nodeGenes.size() - 1);
+                final int toIndex = getRandomNum(0, nodeGenes.size() - 1);
+                from = nodeIndexToID(fromIndex);
+                to = nodeIndexToID(toIndex);
+            } while(!MUTATE_RECURRENT_EDGES && isRecurrent(from, to));
 
-        //add the edge and make sure it is enabled if it was already there.
-        addEdge(cache, from, to).enabled = true;
+            //add the edge and make sure it is enabled if it was already there.
+            if(addEdge(cache, from, to)) break;
+        }
     }
 
 
@@ -444,19 +448,18 @@ class DirectEncoding extends Genome {
 
 
     /**
-     * Add an edge between two nodes. If the edge already exists, it will simply be returned. If the edge is listed in
-     * the cache, then it will use the same ID.
+     * Add an edge between two nodes. If the edge already exists, it will return false and make no change.
      *
      * @param cache    Cached information about the nodes and edges.
      * @param nodeFrom Origin node for the edge.
      * @param nodeTo   Termination node for the edge.
-     * @return The edge which was added (or found).
+     * @return True if the Edge was added successfully.
      */
-    private Edge addEdge(DirectEncodingCache cache, int nodeFrom, int nodeTo) {
+    private boolean addEdge(DirectEncodingCache cache, int nodeFrom, int nodeTo) {
         //check if the edge already exists
         for(Edge e : edgeGenes.values())
             if(e.fromNode == nodeFrom && e.toNode == nodeTo)
-                return e;
+                return false;
 
         //it does not already exist, check if it has been mutated before, if so, use same ID
         int id = cache.getMutatedEdge(nodeFrom, nodeTo);
@@ -469,7 +472,7 @@ class DirectEncoding extends Genome {
         }
 
         edgeGenes.put(e.id, e);
-        return e;
+        return true;
     }
 
 
@@ -479,9 +482,8 @@ class DirectEncoding extends Genome {
      *
      * @param cache Cached information about the nodes and edges.
      * @param edge The edge along which to add a node.
-     * @return The node which was added.
      */
-    private Node addNode(DirectEncodingCache cache, int edge) {
+    private void addNode(DirectEncodingCache cache, int edge) {
         Edge oldEdge = edgeGenes.get(edge);
         oldEdge.enabled = false;
 
@@ -502,7 +504,6 @@ class DirectEncoding extends Genome {
         nodeGenes.put(newNode.id, newNode);
         edgeGenes.put(edgeTo.id, edgeTo);
         edgeGenes.put(edgeFrom.id, edgeFrom);
-        return newNode;
     }
 
 
