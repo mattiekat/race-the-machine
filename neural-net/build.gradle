@@ -11,6 +11,7 @@ repositories {
 
 dependencies {
     compile "com.google.code.gson:gson:2.8.0"
+    compile "net.sf.py4j:py4j:0.10.4"
     compile project(':core')
 
     testCompile group: 'junit', name: 'junit', version: '4.11'
