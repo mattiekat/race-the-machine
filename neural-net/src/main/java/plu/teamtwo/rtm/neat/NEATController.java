@@ -189,12 +189,13 @@ public class NEATController {
         sortByFitness();
         cache.newGeneration();
 
-        //remove any non-improving species
-        generation.removeIf(s ->
-            (generation.size() > TARGET_NUMBER_OF_SPECIES) &&
-            //remove if it has not improved in a while
-            (generationNum - s.getLastImprovement()) > GENERATIONS_BEFORE_REMOVAL
-        );
+        //remove any non-improving species (prefer removing worst performers first)
+        for(ListIterator<Species> i = generation.listIterator(generation.size() - 1);
+            i.hasPrevious() && (generation.size() > TARGET_NUMBER_OF_SPECIES); )
+        {
+            if(generationNum - i.previous().getLastImprovement() > GENERATIONS_BEFORE_REMOVAL)
+                i.remove();
+        }
 
         //make sure every species gets a members in the next generation
         int[] allowances = new int[generation.size()];
@@ -332,18 +333,6 @@ public class NEATController {
             addGenome(newSpeciesList, species.getChampion().duplicate(), species.speciesID);
             offspring--;
         }
-
-//        { //drop the "bottom performers" using a probability distribution function which maps from [0,1] to [0, size - 1]
-//            int numToDrop = (int) (species.size() * BREEDING_SURVIVAL_THRESHOLD);
-//            if(species.size() - numToDrop <= 0) {
-//                System.err.println("BREEDING_SURVIVAL_THRESHOLD is too high.");
-//                numToDrop = species.size() - 2;
-//            }
-//            for(int i = 0; i < numToDrop; ++i)
-//                species.removeNthMostFit(
-//                        randomBackWeightedIndex(species.size(), 10.0f)
-//                );
-//        }
 
         { //Drop anyone below the survival threshold
             final int numToKeep = Math.max((int)(species.size() * BREEDING_SURVIVAL_THRESHOLD), 1);
