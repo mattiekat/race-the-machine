@@ -12,9 +12,8 @@ class Species implements Iterable<Genome> {
     final int parentSpeciesID;
     final int appeared;
 
-    /// Average adjusted fitness of this species
+    /// Average fitness of this species
     private float fitness;
-    private float adjFitness;
 
     /// Highest avg. fitness this species has ever had.
     private float peakFitness;
@@ -67,7 +66,6 @@ class Species implements Iterable<Genome> {
         Species s = new Species(speciesID, parentSpeciesID, appeared);
 
         s.fitness = fitness;
-        s.adjFitness = adjFitness;
         s.peakFitness = peakFitness;
         s.lastImprovement = lastImprovement;
 
@@ -99,16 +97,6 @@ class Species implements Iterable<Genome> {
      */
     float getFitness() {
         return fitness;
-    }
-
-
-    /**
-     * Get the average adjusted fitness of the current members in this species.
-     *
-     * @return The average adjusted fitness of the current members in this species.
-     */
-    float getAdjFitness() {
-        return adjFitness;
     }
 
 
@@ -212,20 +200,16 @@ class Species implements Iterable<Genome> {
 
 
     /**
-     * Adjust the fitness values for all members of this species. This will effectively do nothing if the fitness values
-     * are not already set for each member of the species.
+     * Calculate the average fitness and adjusted fitness values for this species.
      */
-    void adjustFitnessValues(int curGen) {
+    void calculateFitness(int curGen) {
         sorted = false;
         final int size = memebers.size();
-        fitness = adjFitness = 0;
-        for(Genome i : memebers) {
-            i.adjustFitness(size);
+        fitness = 0;
+        for(Genome i : memebers)
             fitness += i.getFitness();
-            adjFitness += i.getAdjFitness();
-        }
+
         fitness /= (float) memebers.size();
-        adjFitness /= (float) memebers.size();
 
         if(fitness > peakFitness) {
             peakFitness = fitness;

@@ -4,7 +4,6 @@ import plu.teamtwo.rtm.neural.NeuralNetwork;
 
 public abstract class Genome {
     private float fitness = 0;
-    private float adjFitness = 0;
 
 
     /**
@@ -49,27 +48,6 @@ public abstract class Genome {
      */
     void setFitness(float fitness) {
         this.fitness = fitness;
-        this.adjFitness = 0;
-    }
-
-
-    /**
-     * Sets the adjusted fitness.
-     *
-     * @param n Number of individuals in the species.
-     */
-    void adjustFitness(int n) {
-        adjFitness = fitness / (float) n;
-    }
-
-
-    /**
-     * Get the adjusted fitness of this individual.
-     *
-     * @return This individual's fitness value adjusted for the species, or 0 if unset.
-     */
-    public float getAdjFitness() {
-        return adjFitness;
     }
 
 

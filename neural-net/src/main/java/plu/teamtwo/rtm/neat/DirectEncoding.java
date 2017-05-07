@@ -15,9 +15,9 @@ class DirectEncoding extends Genome {
     /// Chance that an edge weight which is being mutated will be reinitialized.
     private static final float MUTATE_RESET_WEIGHT = 0.10f;
     /// Chance for a new edge to be added to the system.
-    private static final float MUTATE_NEW_EDGE = 0.05f;
+    private static final float MUTATE_NEW_EDGE = 0.1f;
     /// Chance for a node to be added to the system.
-    private static final float MUTATE_NEW_NODE = 0.03f;
+    private static final float MUTATE_NEW_NODE = 0.1f;
     /// Chance for an edge's enabled status to be flipped.
     private static final float MUTATE_EDGE_TOGGLE = 0.03f;
     /// True if the genome is allowed to mutate recurrent edges

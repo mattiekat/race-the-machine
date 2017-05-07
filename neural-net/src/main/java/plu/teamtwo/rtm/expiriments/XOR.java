@@ -26,7 +26,7 @@ public class XOR {
         for(int g = 0; g < 200; ++g) {
             controller.assesGeneration(new XORScore());
             final Genome best = controller.getBestIndividual();
-            System.out.println(String.format("Gen %d: %.2f, %.2f, %.0f", controller.getGenerationNum(), controller.getFitness(), controller.getAdjFitness(), best.getFitness()));
+            System.out.println(String.format("Gen %d: %.2f, %.0f", controller.getGenerationNum(), controller.getFitness(), best.getFitness()));
             if(best.getFitness() >= 99.5f) {
                 Gson gson = new Gson();
                 System.out.println(gson.toJson(best));

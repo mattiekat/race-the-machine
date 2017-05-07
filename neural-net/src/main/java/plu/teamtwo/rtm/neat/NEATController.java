@@ -39,7 +39,6 @@ public class NEATController {
     private int generationNum;
     private int nextSpeciesID;
     private float fitness;
-    private float adjFitness;
     private transient String savePath;
     private transient boolean sorted;
 
@@ -174,7 +173,7 @@ public class NEATController {
 
         //Adjust the fitness values
         for(Species s : generation)
-            s.adjustFitnessValues(generationNum);
+            s.calculateFitness(generationNum);
 
         calculateFitness();
         sortByFitness();
@@ -203,7 +202,7 @@ public class NEATController {
         //keep track of total breeding allowance given
         int bred = generation.size() * MINIMUM_BREEDING_ALLOWANCE;
 
-        final float globalAdjFitnessSum = adjFitness * (float)POPULATION_SIZE;
+        final float fitnessSum = fitness * (float)POPULATION_SIZE;
         final int allowanceAfterGuarantee = Math.max(POPULATION_SIZE - bred, 0);
 
         if(allowanceAfterGuarantee == 0) {
@@ -213,10 +212,10 @@ public class NEATController {
         }
 
         //Determine an estimated allowance for each species
-        // (SpeciesAvgAdjFitness * NumSpeciesMembers) / GlobalAvgAdjFitness = BreedingAllowance
+        // (AverageSpeciesFitness / Total_of_AverageSpeciesFitnesss) * PopulationSize
         for(int i = 0; i < generation.size(); ++i) {
             final Species s = generation.get(i);
-            final int amount = (int) ((s.getAdjFitness() * s.size() * (float)allowanceAfterGuarantee) / globalAdjFitnessSum);
+            final int amount = (int) ((s.getFitness() / fitnessSum) * (float)allowanceAfterGuarantee);
             allowances[i] += amount;
             bred += amount;
         }
@@ -266,16 +265,6 @@ public class NEATController {
 
 
     /**
-     * Get the average adjusted fitness of all individuals.
-     *
-     * @return The adjusted population fitness.
-     */
-    public float getAdjFitness() {
-        return adjFitness;
-    }
-
-
-    /**
      * Sort the species by their average individual fitness in descending order such that the most fit species is listed
      * at the head of the list.
      */
@@ -283,7 +272,7 @@ public class NEATController {
         if(sorted) return;
         //sort descending
         try {
-            generation.sort((Species a, Species b) -> (int) (b.getAdjFitness() - a.getAdjFitness()));
+            generation.sort((Species a, Species b) -> (int) (b.getFitness() - a.getFitness()));
         } catch(IllegalArgumentException e) {
             System.err.println(e.getMessage());
         }
@@ -313,14 +302,12 @@ public class NEATController {
      * Update the global fitness values.
      */
     private void calculateFitness() {
-        fitness = adjFitness = 0;
+        fitness = 0;
         //Adjust the fitness values
-        for(Species s : generation) {
-            fitness += s.getFitness() * (float) s.size();
-            adjFitness += s.getAdjFitness() * (float) s.size();
-        }
-        fitness /= POPULATION_SIZE;
-        adjFitness /= POPULATION_SIZE;
+        for(Species s : generation)
+            fitness += s.getFitness() * (float)s.size();
+
+        fitness /= (float)POPULATION_SIZE;
     }
 
 
