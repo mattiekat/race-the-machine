@@ -312,24 +312,32 @@ class DirectEncoding extends Genome {
     public void mutate(GenomeCache gCache) {
         DirectEncodingCache cache = (DirectEncodingCache) gCache;
 
-        //TODO: allow for activation function mutations?
-
-        if(iWill(MUTATE_EDGE_WEIGHTS))
-            for(Edge e : edgeGenes.values())
-                mutateWeight(e);
-
-        //TODO: allow for multiple new edges or nodes in a single mutation round
-        // add an edge
-        if(iWill(MUTATE_NEW_EDGE))
-            mutateEdge(cache);
-
-        //add a node
-        if(iWill(MUTATE_NEW_NODE))
+        //Perform structural mutations first
+        if(iWill(MUTATE_NEW_NODE)) {
             mutateNode(cache);
+        }
+        else if(iWill(MUTATE_NEW_EDGE)) {
+            mutateEdge(cache);
+        }
+        else { //perform non-structural modifications
+            //TODO: add traits (including activation function)
 
-        for(Edge e : edgeGenes.values())
+            if(iWill(MUTATE_EDGE_WEIGHTS))
+                mutateWeights();
+
             if(iWill(MUTATE_EDGE_TOGGLE))
-                e.enabled = !e.enabled;
+                mutateToggleEdge(1);
+        }
+    }
+
+
+    private void mutateToggleEdge(int times) {
+        for(int x = 0; x < times; ++x) {
+            final int rand = getRandomNum(0, edgeGenes.size() - 1);
+            final int id = edgeIndexToID(rand);
+            final Edge e = edgeGenes.get(id);
+            e.enabled = !e.enabled;
+        }
     }
 
 
@@ -436,14 +444,14 @@ class DirectEncoding extends Genome {
 
     /**
      * Alter the weight on edge e. Either step it or reset it depending on chance.
-     *
-     * @param e Edge who's weight is to be mutated.
      */
-    private void mutateWeight(Edge e) {
-        if(iWill(MUTATE_RESET_WEIGHT))
-            e.weight = getRandomNum(-EDGE_WEIGHT_INIT_RANGE, EDGE_WEIGHT_INIT_RANGE);
-        else
-            e.weight += getRandomNum(-EDGE_WEIGHT_STEP_MAX, EDGE_WEIGHT_STEP_MAX);
+    private void mutateWeights() {
+        for(Edge e : edgeGenes.values()) {
+            if(iWill(MUTATE_RESET_WEIGHT))
+                e.weight = getRandomNum(-EDGE_WEIGHT_INIT_RANGE, EDGE_WEIGHT_INIT_RANGE);
+            else
+                e.weight += getRandomNum(-EDGE_WEIGHT_STEP_MAX, EDGE_WEIGHT_STEP_MAX);
+        }
     }
 
 
