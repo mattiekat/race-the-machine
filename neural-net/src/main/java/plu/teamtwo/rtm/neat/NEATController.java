@@ -27,6 +27,9 @@ public class NEATController {
     private static final int SPECIES_SIZE_TO_PROTECT_LEADER = 5;
     /// Percent of children in the next generation which are produced by crossover.
     private static final float BREEDING_CROSSOVER_RATE = 0.75f;
+    /// Percent change of using Multipoint crossover; will use MULTIPOINT_AVG if not this.
+    private static final float BREEDING_CROSSOVER_MULTIPOINT = 0.6f;
+    //private static final float BREEDING_CROSSOVER_MULTIPOINT_AVG = 0.4f;
     /// The percentage of a species which will make it to the breeding phase.
     private static final float BREEDING_SURVIVAL_THRESHOLD = 0.20f;
     /// Desired number of species.
@@ -362,8 +365,10 @@ public class NEATController {
                     p2 = species.getNthMostFit(i2);
                 }
 
-                //cross the parents //TODO: use differing cross methods
-                child = p1.cross(cache, p2);
+                //cross the parents
+                child = iWill(BREEDING_CROSSOVER_MULTIPOINT) ?
+                        p1.crossMultipoint(cache, p2) :
+                        p1.crossMultipointAvg(cache, p2);
 
                 //determine if we will mutate the child's genome, do this at random or always if parents are the same
                 if(iWill(BREEDING_CROSSOVER_RATE) || p1.compatibilityDistance(p2) == 0.0f)

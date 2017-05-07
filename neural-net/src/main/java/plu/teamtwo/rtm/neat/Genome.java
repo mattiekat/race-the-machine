@@ -14,8 +14,8 @@ public abstract class Genome {
      * @param p2    Second parent, the less fit of the two.
      * @return A child which is the result of crossing the genomes
      */
-    static Genome cross(GenomeCache cache, Genome p1, Genome p2) {
-        return p1.cross(cache, p2);
+    static Genome crossMultipoint(GenomeCache cache, Genome p1, Genome p2) {
+        return p1.crossMultipoint(cache, p2);
     }
 
 
@@ -93,7 +93,18 @@ public abstract class Genome {
      * @param other The other parent.
      * @return A child which is the result of crossing the genomes
      */
-    abstract Genome cross(GenomeCache cache, Genome other);
+    abstract Genome crossMultipoint(GenomeCache cache, Genome other);
+
+
+    /**
+     * Cross the genomes of two parents to create a child. This will take the disjoint and excess genes from the most
+     * fit parent and average the values of the matching ones.
+     *
+     * @param cache Cached information about the genome.
+     * @param other The other parent.
+     * @return A child which is the result of crossing the genomes
+     */
+    abstract Genome crossMultipointAvg(GenomeCache cache, Genome other);
 
 
     /**

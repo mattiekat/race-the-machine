@@ -106,7 +106,7 @@ class DirectEncoding extends Genome {
      * @param p2    Second parent.
      * @return A child which is the result of crossing the genomes
      */
-    public static DirectEncoding cross(DirectEncodingCache cache, DirectEncoding p1, DirectEncoding p2) {
+    public static DirectEncoding crossMultipoint(DirectEncodingCache cache, DirectEncoding p1, DirectEncoding p2, boolean average) {
         //make p1 the most fit parent
         if(p1.getFitness() < p2.getFitness()) {
             DirectEncoding t = p1;
@@ -130,16 +130,20 @@ class DirectEncoding extends Genome {
             if(e1 != null && e2 == null) { //e1 is an excess node
                 child.edgeGenes.put(e1.id, new Edge(e1));
                 step1 = true;
-            } else if(e1 == null && e2 != null) { //e2 is an excess node
+            }
+            else if(e1 == null && e2 != null) { //e2 is an excess node
                 if(equal) child.edgeGenes.put(e2.id, new Edge(e2));
                 step2 = true;
             }
             else if(e1.id < e2.id) { //e1 is a disjoint node
                 child.edgeGenes.put(e1.id, new Edge(e1));
                 step1 = true;
-            } else if(e1.id == e2.id) {
-                //select edge at random
-                Edge edge = new Edge(getRandomNum(0.0f, 1.0f) < 0.5f ? e1 : e2);
+            }
+            else if(e1.id == e2.id) {
+                //create the edge with either a random weight or the weight of one of the parents
+                Edge edge = average ?
+                        new Edge(e1.id, e1.fromNode, e1.toNode, (e1.weight + e2.weight) / 2.0f) :
+                        new Edge(iWill(0.5f) ? e1 : e2);
 
                 //chance to disable child if either parent is disabled
                 if(!e1.enabled || !e2.enabled)
@@ -149,7 +153,8 @@ class DirectEncoding extends Genome {
                 //add the new edge to the list
                 child.edgeGenes.put(edge.id, edge);
                 step1 = step2 = true;
-            } else { // e1.id > e2.id //e2 is a disjoint node
+            }
+            else { // e1.id > e2.id //e2 is a disjoint node
                 if(equal) child.edgeGenes.put(e2.id, new Edge(e2));
                 step2 = true;
             }
@@ -171,7 +176,7 @@ class DirectEncoding extends Genome {
         for(int i = discovered.nextSetBit(0); i >= 0; i = discovered.nextSetBit(i+1)) {
             Node n = p1.nodeGenes.get(i);
             if(n == null) n = p2.nodeGenes.get(i);
-            if(n == null) throw new IllegalArgumentException("In DirectEncoding cross, one of the parents had an edge for which it did not have the corresponding nodes.");
+            if(n == null) throw new IllegalArgumentException("In DirectEncoding crossMultipoint, one of the parents had an edge for which it did not have the corresponding nodes.");
             child.nodeGenes.put(n.id, new Node(n));
         }
 
@@ -242,8 +247,22 @@ class DirectEncoding extends Genome {
      * @return A child which is the result of crossing the genomes
      */
     @Override
-    public DirectEncoding cross(GenomeCache cache, Genome other) {
-        return cross((DirectEncodingCache) cache, this, (DirectEncoding) other);
+    public DirectEncoding crossMultipoint(GenomeCache cache, Genome other) {
+        return crossMultipoint((DirectEncodingCache) cache, this, (DirectEncoding) other, false);
+    }
+
+
+    /**
+     * Cross the genomes of two parents to create a child. This will take the disjoint and excess genes from the most
+     * fit parent and average the values of the matching ones.
+     *
+     * @param cache Cached information about the genome.
+     * @param other The other parent.
+     * @return A child which is the result of crossing the genomes
+     */
+    @Override
+    Genome crossMultipointAvg(GenomeCache cache, Genome other) {
+        return crossMultipoint((DirectEncodingCache) cache, this, (DirectEncoding) other, true);
     }
 
 
