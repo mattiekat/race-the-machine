@@ -234,7 +234,7 @@ public class NEATController {
         for(int i = 0; i < generation.size(); ++i) {
             final Species s = generation.get(i);
             nextGen.addAll(
-                breed(s, generationNum, allowances[i])
+                breed(s, i, generationNum, allowances[i])
             );
         }
 
@@ -315,12 +315,15 @@ public class NEATController {
     /**
      * This will breed the current generation to create the next gen. It is possible that in the process the species
      * will be split into two or more resulting species.
+     * TODO: move this to Species
      *
+     * @param species   The species to be bred
+     * @param index     Index of the species to be bred
      * @param nextGen   Integer representing the new generation's number.
      * @param offspring Number of offspring this species should produce for the next generation.
      * @return A list of the resulting species after breeding. Will be empty if the allowance is 0.
      */
-    private List<Species> breed(Species species, int nextGen, int offspring) {
+    private List<Species> breed(Species species, int index, int nextGen, int offspring) {
         List<Species> newSpeciesList = new LinkedList<>();
         if(offspring <= 0) //handle the odd case
             return newSpeciesList;
@@ -342,14 +345,29 @@ public class NEATController {
         //create the children
         while(offspring-- > 0) {
             Genome child = null;
-            if(species.size() > 1 && iWill(BREEDING_CROSSOVER_RATE)) { //use crossover on two random individuals
-                int i1 = getRandomNum(0, species.size() - 1), i2 = 0;
-                //select a i2 which is not the same as i1
-                while((i2 = getRandomNum(0, species.size() - 1)) == i1);
 
-                Genome p1 = species.getNthMostFit(i1);
-                Genome p2 = species.getNthMostFit(i2);
-                child  = p1.cross(cache, p2);
+            if(species.size() > 1 && iWill(BREEDING_CROSSOVER_RATE)) { //use crossover on two random individuals
+                //select parents
+                int i1 = getRandomNum(0, species.size() - 1), i2 = 0;
+                Genome p1 = species.getNthMostFit(i1), p2;
+
+                if(iWill(INTERSPECIES_MATING_RATE)) { //mate outside species
+                    int s = 0, tries = 5;
+                    //try to find a different species
+                    while(tries-- > 0 && (s = randomFrontWeightedIndex(generation.size() - 1, 0.5f)) == index);
+                    p2 = generation.get(s).getChampion();
+                } else { //mate within species
+                    //select a i2 which is not the same as i1
+                    while((i2 = getRandomNum(0, species.size() - 1)) == i1);
+                    p2 = species.getNthMostFit(i2);
+                }
+
+                //cross the parents //TODO: use differing cross methods
+                child = p1.cross(cache, p2);
+
+                //determine if we will mutate the child's genome, do this at random or always if parents are the same
+                if(iWill(BREEDING_CROSSOVER_RATE) || p1.compatibilityDistance(p2) == 0.0f)
+                    child.mutate(cache);
             }
             else { //copy and mutate
                 int i = getRandomNum(0, species.size() - 1);
