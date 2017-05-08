@@ -1,4 +1,4 @@
-package plu.teamtwo.rtm.core.util;
+package plu.teamtwo.rtm.ii.util;
 
 /**
  * Point utility class. Used to represent a 2-dimensional point as a data structure that can be passed around. Contains

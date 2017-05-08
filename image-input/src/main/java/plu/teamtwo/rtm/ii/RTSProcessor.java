@@ -1,21 +1,20 @@
 package plu.teamtwo.rtm.ii;
 
-import org.opencv.core.Core;
-import org.opencv.core.Mat;
-import org.opencv.core.Size;
+import org.opencv.core.*;
 import org.opencv.imgproc.Imgproc;
+import plu.teamtwo.rtm.ii.util.Line;
+import plu.teamtwo.rtm.ii.util.Point;
+import plu.teamtwo.rtm.ii.util.Polygon;
 
+import java.util.List;
 import java.awt.*;
 import java.awt.image.BufferedImage;
 import java.util.HashSet;
+import java.util.LinkedList;
 import java.util.concurrent.ConcurrentLinkedQueue;
 
-/**
- * Created by MajorSlime on 4/26/2017.
- */
-public class RTSProcessor {
 
-    public static void init() { System.loadLibrary(Core.NATIVE_LIBRARY_NAME); }
+public class RTSProcessor {
 
     private Runner runner = null;
 
@@ -25,7 +24,11 @@ public class RTSProcessor {
     private ScreenCap capper;
     private final Object capSwitchLock = new Object();
 
-    private ConcurrentLinkedQueue<BufferedImage> cap_queue = new ConcurrentLinkedQueue<>();
+    private Scalar lowerBounds = new Scalar(0,0,0);
+    private Scalar upperBounds = new Scalar(255, 255, 255);
+    private final Object boundsLock = new Object();
+
+    private ConcurrentLinkedQueue<ProcessedData> cap_queue = new ConcurrentLinkedQueue<>();
 
     public RTSProcessor(ScreenCap capper) {
         this.capper = capper;
@@ -37,7 +40,7 @@ public class RTSProcessor {
 
     public int getFPS() { return fps; }
 
-    public BufferedImage getNext() { return cap_queue.poll(); }
+    public ProcessedData getNext() { return cap_queue.poll(); }
 
     public synchronized void start() {
         if(runner == null) {
@@ -55,6 +58,13 @@ public class RTSProcessor {
     public void setCapper(ScreenCap capper) {
         synchronized(capSwitchLock) {
             this.capper = capper;
+        }
+    }
+
+    public void setHSVBounds(int hMin, int sMin, int vMin, int hMax, int sMax, int vMax) {
+        synchronized(boundsLock) {
+            this.lowerBounds = new Scalar(hMin, sMin, vMin);
+            this.upperBounds = new Scalar(hMax, sMax, vMax);
         }
     }
 
@@ -127,18 +137,46 @@ public class RTSProcessor {
             }
         }
 
-        private BufferedImage processImg(BufferedImage img) {
+        private ProcessedData processImg(BufferedImage img) {
             Mat frame = Util.bufferedImageToMat(img);
             Mat gray = new Mat();
             Mat edges = new Mat();
+            Mat morphOutput = new Mat();
 
             Imgproc.cvtColor(frame, gray, Imgproc.COLOR_BGR2GRAY);
             Imgproc.blur(gray, edges, new Size(3, 3));
-            Imgproc.Canny(edges, edges, 12, 12*3);
+            Imgproc.Canny(edges, edges, 10, 20*3);
+
+            Mat dilateElement = Imgproc.getStructuringElement(Imgproc.MORPH_RECT, new Size(8, 8));
+            Mat erodeElement = Imgproc.getStructuringElement(Imgproc.MORPH_RECT, new Size(12, 12));
+
+            //Imgproc.erode(edges, morphOutput, erodeElement);
+            //Imgproc.erode(edges, morphOutput, erodeElement);
+
+            Imgproc.dilate(edges, morphOutput, dilateElement);
+
+            List<MatOfPoint> contours = new LinkedList<>();
+            Mat hierarchy = new Mat();
+            Imgproc.findContours(morphOutput, contours, hierarchy, Imgproc.RETR_TREE, Imgproc.CHAIN_APPROX_SIMPLE);
+
+            LinkedList<Polygon> lp = new LinkedList<>();
+            for(MatOfPoint entry : contours) {
+                if(Imgproc.contourArea(entry) < 5) continue;
+                //if(Imgproc.contourArea(entry) > 75000) continue;
+                LinkedList<Point> myPoints = new LinkedList<>();
+                for(org.opencv.core.Point p : entry.toList())
+                    myPoints.add(new Point(p.x, p.y));
+                if(myPoints.size() > 2) {
+                    Polygon poly = new Polygon(myPoints);
+                    if( (poly.max.x.doubleValue() - poly.min.x.doubleValue()) / (poly.max.y.doubleValue() - poly.min.y.doubleValue()) < 7.0 )
+                        lp.add(poly);
+                }
+            }
 
             Mat dest = new Mat();
-            edges.copyTo(dest);
-            return Util.matToBufferedImage(dest);
+            morphOutput.copyTo(dest);
+
+            return new ProcessedData(img, Util.matToBufferedImage(dest), lp);
         }
     }
 

@@ -2,47 +2,42 @@ package plu.teamtwo.rtm.core.gui;
 
 import plu.teamtwo.rtm.ii.RTSProcessor;
 
-import plu.teamtwo.rtm.core.util.Point;
+import plu.teamtwo.rtm.ii.util.Line;
+import plu.teamtwo.rtm.ii.util.Point;
+import plu.teamtwo.rtm.ii.util.Polygon;
 import plu.teamtwo.rtm.ii.ScreenCap;
 
+import java.util.List;
 import javax.swing.*;
 import java.awt.*;
 import java.awt.event.MouseEvent;
 import java.awt.event.MouseListener;
-import java.awt.font.TextLayout;
-import java.awt.geom.Rectangle2D;
 import java.awt.image.BufferedImage;
 
-public class ImagePanel extends JPanel implements RTSProcessor.ProcessingListener, MouseListener {
+public class ImagePanel extends JPanel implements MouseListener {
 
     protected final RTSProcessor rtsp;
     protected BufferedImage img = null;
+    protected List<Polygon> polygons = null;
     public static final Font FPS_FONT = new Font("Arial", Font.BOLD, 36);
     protected final Dimension fullSize;
 
-    private long lastClickedTime = 0;
     private Point firstClick = null;
 
     public ImagePanel(RTSProcessor rtsp) {
         this.rtsp = rtsp;
-        this.rtsp.addListener(this);
         DisplayMode dm = this.rtsp.getScreen().getDisplayMode();
         fullSize = new Dimension(dm.getWidth(), dm.getHeight());
         this.addMouseListener(this);
     }
 
-    @Override
-    public void frameProcessed() {
-        SwingUtilities.invokeLater(new Runnable(){
-            @Override public void run() {
-                img = rtsp.getNext();
-                repaint();
-            }
-        });
+    public void setContents(BufferedImage img, List<Polygon> polygons) {
+        this.img = img;
+        this.polygons = polygons;
     }
 
     @Override
-    public Dimension getPreferredSize() {
+    public Dimension getMinimumSize() {
         return new Dimension(800, 600);
     }
 
@@ -61,9 +56,39 @@ public class ImagePanel extends JPanel implements RTSProcessor.ProcessingListene
         g.setColor(Color.YELLOW);
         ((Graphics2D)g).setStroke(new BasicStroke(8));
         g.drawRect(x, y, width, height);
+
+        // Draw the Image
         if(img != null) g.drawImage(img, x, y, width, height, null);
+
+        // Draw the Lines
+        if(polygons != null) {
+            float hue = 0.0f;
+            ((Graphics2D)g).setStroke(new BasicStroke(2));
+            for(Polygon poly : polygons) {
+                hue += 0.01f;
+                if(hue > 0.8f) hue = 0.0f;
+                g.setColor(new Color(Color.HSBtoRGB(hue, 1.0f, 1.0f)));
+                int[] xvals = new int[poly.points.length];
+                int[] yvals = new int[poly.points.length];
+                for(int i = 0; i < poly.points.length; i++) {
+                    xvals[i] = x + (int)(poly.points[i].x.doubleValue() * xMod);
+                    yvals[i] = y + (int)(poly.points[i].y.doubleValue() * yMod);
+
+                    /*
+                    int i2 = (i+1) % poly.points.length;
+                    g.drawLine(
+                            x + (int)(poly.points[i2].x.doubleValue() * xMod),
+                            y + (int)(poly.points[i2].y.doubleValue() * yMod),
+                            x + (int)(poly.points[i] .x.doubleValue() * xMod),
+                            y + (int)(poly.points[i] .y.doubleValue() * yMod));
+                            */
+                }
+                g.fillPolygon(xvals, yvals, poly.points.length);
+            }
+        }
+
         g.setFont(FPS_FONT);
-        String fpsStr = ""+rtsp.getFPS();
+        String fpsStr = ""+rtsp.getFPS() + ":" + (polygons == null ? -1 : polygons.size());
         g.setColor(Color.BLACK);
         g.fillRect(6, 6, 50, 40);
         g.setColor(Color.YELLOW);
@@ -90,12 +115,9 @@ public class ImagePanel extends JPanel implements RTSProcessor.ProcessingListene
 
     @Override
     public void mousePressed(MouseEvent e) {
-        long currentTime = System.currentTimeMillis();
-        long deltaTime = currentTime - lastClickedTime;
-        if(deltaTime < 1000) {
+        if(e.getClickCount() == 2) {
             firstClick = new Point(e.getX(), e.getY());
         }
-        lastClickedTime = currentTime;
     }
 
     @Override

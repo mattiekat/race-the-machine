@@ -1,4 +1,4 @@
-package plu.teamtwo.rtm.core.util;
+package plu.teamtwo.rtm.ii.util;
 
 import org.junit.Test;
 

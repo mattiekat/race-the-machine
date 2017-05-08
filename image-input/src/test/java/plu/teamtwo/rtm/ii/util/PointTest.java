@@ -1,6 +1,5 @@
-package plu.teamtwo.rtm.core.util;
+package plu.teamtwo.rtm.ii.util;
 
-import org.junit.Before;
 import org.junit.Test;
 
 import static org.junit.Assert.*;
