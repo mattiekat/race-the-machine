@@ -10,9 +10,12 @@ import java.io.FileDescriptor;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.PrintStream;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.List;
 
 public class XOR {
-    private static final int TOTAL_ROUNDS = 100;
+    //private static final int TOTAL_ROUNDS = 100;
 
     public static void main(String[] args) {
         PrintStream output = new PrintStream(new FileOutputStream(FileDescriptor.out));
@@ -43,9 +46,25 @@ public class XOR {
 
 
     private static class XORScore implements ScoringFunction {
-        private int rounds = TOTAL_ROUNDS;
+        //private int rounds = TOTAL_ROUNDS;
         private float score = 0;
         private boolean expected;
+        private int last = 0;
+        private int[] order;
+        private static final float inuputs[][] = new float[][] {
+                { 1.0f, 0.0f, 0.0f },
+                { 1.0f, 0.0f, 1.0f },
+                { 1.0f, 1.0f, 0.0f },
+                { 1.0f, 1.0f, 1.0f }
+        };
+
+        XORScore() {
+            List<Integer> shuffle = new ArrayList<>();
+            for (int i = 0; i < 80; i++)
+                shuffle.add(i % 4);
+            Collections.shuffle(shuffle);
+            order = shuffle.stream().mapToInt(i -> i).toArray();
+        }
 
         /**
          * This will be called to determine how many simultaneous instances of the function can exist.
@@ -55,6 +74,18 @@ public class XOR {
         @Override
         public int getMaxThreads() {
             return 1;
+        }
+
+
+        /**
+         * This will be called to determine if the neural network should be flushed between inputs.
+         * It will only be called once.
+         *
+         * @return True if the network should be flushed between inputs.
+         */
+        @Override
+        public boolean flushBetween() {
+            return true;
         }
 
 
@@ -79,13 +110,19 @@ public class XOR {
          */
         @Override
         public float[] generateInput() {
-            if(--rounds < 0) return null;
-
-            float a = Math.round(Math.random());
-            float b = Math.round(Math.random());
-            expected = ((int)a ^ (int)b) == 1;
-
-            return new float[]{1.0f, a, b};
+            float[] inuput = null;
+            if(last < 80) {
+                inuput = inuputs[order[last++]];
+                expected = ((int)inuput[1] ^ (int)inuput[2]) == 1;
+            }
+            return inuput;
+//            if(--rounds < 0) return null;
+//
+//            float a = Math.round(Math.random());
+//            float b = Math.round(Math.random());
+//            expected = ((int)a ^ (int)b) == 1;
+//
+//            return new float[]{1.0f, a, b};
         }
 
 

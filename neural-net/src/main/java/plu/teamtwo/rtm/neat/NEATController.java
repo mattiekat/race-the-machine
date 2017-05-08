@@ -419,9 +419,11 @@ public class NEATController {
         @Override
         public void run() {
             NeuralNetwork network = genome.getANN();
+            final boolean flushBetween = scoringFunction.flushBetween();
 
             float[] input;
             while((input = scoringFunction.generateInput()) != null) {
+                if(flushBetween) network.flush();
                 float[] output = network.calculate(input, false);
                 scoringFunction.acceptOutput(output);
             }

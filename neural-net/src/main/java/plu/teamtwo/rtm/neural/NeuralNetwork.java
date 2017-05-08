@@ -12,6 +12,8 @@ import java.util.*;
  * Next call setNeuron for all neurons, keep in mind that [0, inputNeurons) will be the inputs,
  * [inputNeurons, outputNeurons) will be the output nodes, and [outputNeurons, neurons.length) will be the hidden nodes.
  * Finally call validate() which will finalize the structure, enabling it to be calculated.
+ *
+ * TODO: Make sure output nodes are calculated last or change how we calculate recurrence
  */
 public class NeuralNetwork {
     private static final ActivationFunction DEFAULT_ACTIVATION_FUNCTION = ActivationFunction.SIGMOID;
@@ -158,5 +160,14 @@ public class NeuralNetwork {
             outputs[j] = neurons[i].getOutput();
 
         return outputs;
+    }
+
+
+    /**
+     * Empty the network of all stored values. This should be called between tests.
+     */
+    public void flush() {
+        for(Neuron n : neurons)
+            n.flush();
     }
 }

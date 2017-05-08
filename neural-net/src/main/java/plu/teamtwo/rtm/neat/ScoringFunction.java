@@ -31,6 +31,14 @@ public interface ScoringFunction {
     int getMaxThreads();
 
     /**
+     * This will be called to determine if the neural network should be flushed between inputs.
+     * It will only be called once.
+     *
+     * @return True if the network should be flushed between inputs.
+     */
+    boolean flushBetween();
+
+    /**
      * This function will be called to retrieve the inputs which should be used by the network. This will be called
      * until it returns null, signaling the end of inputs.
      *

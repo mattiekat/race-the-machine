@@ -50,4 +50,14 @@ class Neuron {
     float getOutput() {
         return output;
     }
+
+
+    /**
+     * Flush this neuron of all calculated information.
+     * Does not alter the structure.
+     */
+    void flush() {
+        input = 0.0f;
+        output = 0.0f;
+    }
 }
