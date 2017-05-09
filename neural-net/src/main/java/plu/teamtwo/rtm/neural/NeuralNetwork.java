@@ -17,6 +17,8 @@ import java.util.*;
  */
 public class NeuralNetwork {
     private static final ActivationFunction DEFAULT_ACTIVATION_FUNCTION = ActivationFunction.SIGMOID;
+    private static final int DEFAULT_MAX_RECURRENT_CYCLES = 20;
+    private static final float DEFAULT_MAX_DIFFERENCE_BETWEEN_OUTPUTS = 1e-4f;
 
     /// The neurons in the ANN. The neurons are stored in this order: input, output, hidden.
     private final Neuron[] neurons;
@@ -107,6 +109,52 @@ public class NeuralNetwork {
     }
 
 
+    public float[] calculate(float... inputs) {
+        return calculate(DEFAULT_MAX_RECURRENT_CYCLES, DEFAULT_MAX_DIFFERENCE_BETWEEN_OUTPUTS, inputs);
+    }
+
+    /**
+     * Run through the neural network until the difference each of the inputs is within the acceptable range or the
+     * maximum number of cycles has been run.
+     *
+     * @param inputs Array of values to set the input neurons to.
+     * @param maxDiff Maximum difference between runs before accepting the result of the network.
+     * @return Output of the network.
+     */
+    public float[] calculate(int maxCycles, float maxDiff, float... inputs) {
+        float[] output = run(inputs, false), last = null;
+
+        //run until we hit max cycles or the value has stabilized
+        for(int cycle = 0; cycle < maxCycles; ++cycle) {
+            last = output;
+            output = run(inputs, false);
+
+            //check if any exceed max difference and end the loop if so
+            boolean within = true;
+            for(int i = 0; i < output.length; ++i) {
+                if(Math.abs(last[i] - output[i]) > maxDiff) {
+                    within = false;
+                    break;
+                }
+            } if(within) break;
+        }
+        return output;
+    }
+
+
+    /**
+     * Steps values through the neural network by processing from the final nodes to the initial nodes. This could be
+     * used with real-time applications where direct input-output pairing are not so important as temporal
+     * comprehension.
+     *
+     * @param inputs Array of values to set the input neurons to.
+     * @return Array of values from the output neurons.
+     */
+    public float[] step(float... inputs) {
+        return run(inputs, true);
+    }
+
+
     /**
      * Runs the neural network on a set of inputs and provides the resulting outputs. This will do a full run through
      * the network taking the inputs values all the way to the output neurons.
@@ -115,7 +163,7 @@ public class NeuralNetwork {
      *             would be when stepping is disabled.
      * @return Array of values from the output neurons.
      */
-    public float[] calculate(float[] inputs, boolean step) {
+    private float[] run(float[] inputs, boolean step) {
         if(!validated)
             throw new IllegalStateException("Cannot run the ANN without being validated");
         if(inputs.length != inputNeurons)

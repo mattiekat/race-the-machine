@@ -26,11 +26,11 @@ public class XOR {
 
         controller.createFirstGeneration();
 
-        for(int g = 0; g < 200; ++g) {
+        for(int g = 0; g < 1000; ++g) {
             controller.assesGeneration(new XORScore());
             final Genome best = controller.getBestIndividual();
             System.out.println(String.format("Gen %d: %.2f, %.0f", controller.getGenerationNum(), controller.getFitness(), best.getFitness()));
-            if(best.getFitness() >= 99.5f) {
+            if(best.getFitness() >= 100.0f) {
                 Gson gson = new Gson();
                 System.out.println(gson.toJson(best));
                 return;
@@ -46,7 +46,6 @@ public class XOR {
 
 
     private static class XORScore implements ScoringFunction {
-        //private int rounds = TOTAL_ROUNDS;
         private float score = 0;
         private boolean expected;
         private int last = 0;
@@ -60,7 +59,7 @@ public class XOR {
 
         XORScore() {
             List<Integer> shuffle = new ArrayList<>();
-            for (int i = 0; i < 80; i++)
+            for (int i = 0; i < 4; i++)
                 shuffle.add(i % 4);
             Collections.shuffle(shuffle);
             order = shuffle.stream().mapToInt(i -> i).toArray();
@@ -111,7 +110,7 @@ public class XOR {
         @Override
         public float[] generateInput() {
             float[] inuput = null;
-            if(last < 80) {
+            if(last < 4) {
                 inuput = inuputs[order[last++]];
                 expected = ((int)inuput[1] ^ (int)inuput[2]) == 1;
             }
@@ -148,7 +147,7 @@ public class XOR {
          */
         @Override
         public float getScore() {
-            return score;
+            return (score / 4.0f) * 100.0f;
         }
     }
 }

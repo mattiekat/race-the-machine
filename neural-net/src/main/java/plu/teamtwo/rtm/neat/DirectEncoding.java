@@ -17,7 +17,7 @@ class DirectEncoding extends Genome {
     /// Chance for a new edge to be added to the system.
     private static final float MUTATE_NEW_EDGE = 0.05f;
     // Number of times it should try to mutate a new edge
-    private static final int MUTATE_NEW_EDGE_TRIES = 20;
+    private static final int MUTATE_NEW_EDGE_TRIES = 30;
     /// Chance for a node to be added to the system.
     private static final float MUTATE_NEW_NODE = 0.03f;
     /// Chance for an edge's enabled status to be flipped.
@@ -384,6 +384,7 @@ class DirectEncoding extends Genome {
                 final int toIndex = getRandomNum(0, nodeGenes.size() - 1);
                 from = nodeIndexToID(fromIndex);
                 to = nodeIndexToID(toIndex);
+                if(++x > MUTATE_NEW_EDGE_TRIES) return;
             } while(!MUTATE_RECURRENT_EDGES && isRecurrent(from, to));
 
             //add the edge and make sure it is enabled if it was already there.

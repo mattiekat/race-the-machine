@@ -424,7 +424,7 @@ public class NEATController {
             float[] input;
             while((input = scoringFunction.generateInput()) != null) {
                 if(flushBetween) network.flush();
-                float[] output = network.calculate(input, false);
+                float[] output = network.calculate(input);
                 scoringFunction.acceptOutput(output);
             }
 
