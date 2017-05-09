@@ -107,14 +107,15 @@ class DirectEncoding extends Genome {
      * @return A child which is the result of crossing the genomes
      */
     public static DirectEncoding crossMultipoint(DirectEncodingCache cache, DirectEncoding p1, DirectEncoding p2, boolean average) {
-        //make p1 the most fit parent
-        if(p1.getFitness() < p2.getFitness()) {
+        //make p1 the most fit parent, or if equal, the one with the least genes
+        if(p1.getFitness() < p2.getFitness() || (p1.getFitness() == p2.getFitness() &&
+                p1.edgeGenes.size() + p1.nodeGenes.size() >
+                p2.edgeGenes.size() + p2.nodeGenes.size()) )
+        {
             DirectEncoding t = p1;
             p1 = p2;
             p2 = t;
         }
-
-        final boolean equal = p1.getFitness() == p2.getFitness();
 
         //go through both parents and line up innovation numbers
         // always sorted because it is a TreeSet
@@ -132,7 +133,6 @@ class DirectEncoding extends Genome {
                 step1 = true;
             }
             else if(e1 == null && e2 != null) { //e2 is an excess node
-                if(equal) child.edgeGenes.put(e2.id, new Edge(e2));
                 step2 = true;
             }
             else if(e1.id < e2.id) { //e1 is a disjoint node
@@ -140,7 +140,7 @@ class DirectEncoding extends Genome {
                 step1 = true;
             }
             else if(e1.id == e2.id) {
-                //create the edge with either a random weight or the weight of one of the parents
+                //choose either randomly from the parents or average the weight
                 Edge edge = average ?
                         new Edge(e1.id, e1.fromNode, e1.toNode, (e1.weight + e2.weight) / 2.0f) :
                         new Edge(iWill(0.5f) ? e1 : e2);
@@ -155,7 +155,6 @@ class DirectEncoding extends Genome {
                 step1 = step2 = true;
             }
             else { // e1.id > e2.id //e2 is a disjoint node
-                if(equal) child.edgeGenes.put(e2.id, new Edge(e2));
                 step2 = true;
             }
 

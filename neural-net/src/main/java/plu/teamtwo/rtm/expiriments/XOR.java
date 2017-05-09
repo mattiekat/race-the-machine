@@ -1,6 +1,7 @@
 package plu.teamtwo.rtm.expiriments;
 
 import com.google.gson.Gson;
+import com.google.gson.GsonBuilder;
 import plu.teamtwo.rtm.neat.Encoding;
 import plu.teamtwo.rtm.neat.Genome;
 import plu.teamtwo.rtm.neat.NEATController;
@@ -31,7 +32,7 @@ public class XOR {
             final Genome best = controller.getBestIndividual();
             System.out.println(String.format("Gen %d: %.2f, %.0f", controller.getGenerationNum(), controller.getFitness(), best.getFitness()));
             if(best.getFitness() >= 100.0f) {
-                Gson gson = new Gson();
+                Gson gson = new GsonBuilder().setPrettyPrinting().create();
                 System.out.println(gson.toJson(best));
                 return;
             }
