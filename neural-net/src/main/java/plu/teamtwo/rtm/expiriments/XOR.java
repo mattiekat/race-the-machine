@@ -15,10 +15,13 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 
-public class XOR {
+public class XOR implements Runnable {
     //private static final int TOTAL_ROUNDS = 100;
 
-    public static void main(String[] args) {
+    public XOR() {}
+    
+    @Override
+    public void run() {
         PrintStream output = new PrintStream(new FileOutputStream(FileDescriptor.out));
         NEATController controller = new NEATController(
                 Encoding.DIRECT_ENCODING,
@@ -43,6 +46,10 @@ public class XOR {
 //        } catch(IOException e) {
 //            System.err.println(e.getMessage());
 //        }
+    }
+
+    public static void main(String[] args) {
+        new XOR().run();
     }
 
 
