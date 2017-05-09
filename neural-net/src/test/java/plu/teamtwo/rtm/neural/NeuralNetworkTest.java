@@ -16,40 +16,27 @@ public class NeuralNetworkTest {
         //0 -> 2
         //1 -> 3
 
-        NeuralNetwork net = new NeuralNetwork(2, 2, 0);
+         NeuralNetwork.Builder builder = new NeuralNetwork.Builder()
+                 .inputs(2)
+                 .outputs(2)
+                 .hidden(0)
+                 .connect(0, 2, -2)
+                 .connect(1, 3, 1);
 
         for(int i = 0; i < 4; ++i)
-            if(i != 1) assertTrue( net.setFunction(i, ActivationFunction.LINEAR) );
+            builder.setFunction(i, ActivationFunction.LINEAR);
 
-        assertTrue( net.connect(0, 2, -2) );
-        assertTrue( net.connect(1, 3, 1) );
-        assertFalse( net.connect(-1, 4, 1));
-        assertFalse( net.connect(1, 3, 1));
+        NeuralNetwork net = builder.create();
 
-        assertTrue( net.validate() );
-
-        try {
-            net.connect(0, 1, 1);
-            assertTrue(false);
-        } catch(IllegalStateException e) {}
-
-        try {
-            net.setFunction(1, ActivationFunction.LINEAR);
-            assertTrue(false);
-        } catch(IllegalStateException e) {}
-
-
-        float[] inputs = new float[]{2.0f, 3.0f};
         float[] outputs;
 
-        outputs = net.calculate(inputs);
+        outputs = net.calculate(2.0f, 3.0f);
         assertEquals(-4.0f, outputs[0], 1e-3);
-        assertEquals(0.9526f, outputs[1], 1e-3);
+        assertEquals(3.0f, outputs[1], 1e-3);
 
-        inputs[0] = -1.2f; inputs[1] = -2.9f;
-        outputs = net.calculate(inputs);
+        outputs = net.calculate(-1.2f, -2.9f);
         assertEquals(2.4f, outputs[0], 1e-3);
-        assertEquals(0.0522f, outputs[1], 1e-3);
+        assertEquals(-2.9f, outputs[1], 1e-3);
     }
 
 
@@ -63,29 +50,19 @@ public class NeuralNetworkTest {
         //2 -> 3
         //4 -> 3
 
-        NeuralNetwork net = new NeuralNetwork(3, 1, 1);
+        NeuralNetwork net = new NeuralNetwork.Builder()
+                .inputs(3)
+                .outputs(1)
+                .hidden(1)
+                .connect(0, 3, -0.71f)
+                .connect(0, 4, 1.00f)
+                .connect(1, 3, 1.56f)
+                .connect(1, 4, -0.12f)
+                .connect(2, 3, -1.08f)
+                .connect(4, 3, 2.13f)
+                .create();
 
-        assertTrue( net.connect(0, 3, -0.71f) );
-        assertTrue( net.connect(0, 4, 1.00f) );
-        assertTrue( net.connect(1, 3, 1.56f) );
-        assertTrue( net.connect(1, 4, -0.12f) );
-        assertTrue( net.connect(2, 3, -1.08f) );
-        assertTrue( net.connect(4, 3, 2.13f) );
-
-        assertTrue( net.validate() );
-
-        try {
-            net.connect(0, 1, 1);
-            assertTrue(false);
-        } catch(IllegalStateException e) {}
-
-        try {
-            net.setFunction(1, ActivationFunction.LINEAR);
-            assertTrue(false);
-        } catch(IllegalStateException e) {}
-
-
-        float[] inputs = new float[]{ 1.0f, 0.0f, 0.0f };
+        float[] inputs = new float[]{1.0f, 0.0f, 0.0f};
         float[] outputs;
 
         outputs = net.calculate(inputs);
@@ -102,18 +79,20 @@ public class NeuralNetworkTest {
         //2 -> 3
         //3 -> 2, 3
 
-        NeuralNetwork net = new NeuralNetwork(2, 1, 1);
+         NeuralNetwork.Builder builder = new NeuralNetwork.Builder()
+                 .inputs(2)
+                 .outputs(1)
+                 .hidden(1)
+                 .connect(0, 3, 1)
+                 .connect(1, 3, 1)
+                 .connect(2, 3, 1)
+                 .connect(3, 2, 1)
+                 .connect(3, 3, 1);
 
         for(int i = 0; i < 2; ++i)
-            assertTrue( net.setFunction(i, ActivationFunction.LINEAR) );
+            builder.setFunction(i, ActivationFunction.LINEAR);
 
-        assertTrue( net.connect(0, 3, 1) );
-        assertTrue( net.connect(1, 3, 1) );
-        assertTrue( net.connect(2, 3, 1) );
-        assertTrue( net.connect(3, 2, 1) );
-        assertTrue( net.connect(3, 3, 1) );
-
-        assertTrue( net.validate() );
+        NeuralNetwork net = builder.create();
 
         float[] inputs = new float[]{0.18f, 0.2f};
         float[] outputs;
@@ -125,6 +104,7 @@ public class NeuralNetworkTest {
         //Rather than trying connection figure out what the outputs are supposed connection be, just make sure it does not loop forever
     }
 
+
     @Test
     public void steppingNetworkTest() {
         //Inputs:   0
@@ -134,17 +114,19 @@ public class NeuralNetworkTest {
         //2 -> 3
         //3 -> 1
 
-        NeuralNetwork net = new NeuralNetwork(1, 1, 2);
+        NeuralNetwork.Builder builder = new NeuralNetwork.Builder()
+                .inputs(1)
+                .outputs(1)
+                .hidden(2)
+                .connect(0, 2, 1)
+                .connect(2, 3, 1)
+                .connect(3, 1, 1)
+                .connect(1, 0, 1);
 
         for(int i = 0; i < 4; ++i)
-            assertTrue( net.setFunction(i, ActivationFunction.LINEAR) );
+            builder.setFunction(i, ActivationFunction.LINEAR);
 
-        assertTrue( net.connect(0, 2, 1) );
-        assertTrue( net.connect(2, 3, 1) );
-        assertTrue( net.connect(3, 1, 1) );
-        assertTrue( net.connect(1, 0, 1) );
-
-        assertTrue( net.validate() );
+        NeuralNetwork net = builder.create();
 
         float[] inputs = new float[]{1.0f};
         float[] outputs;

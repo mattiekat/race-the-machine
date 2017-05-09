@@ -175,7 +175,8 @@ class DirectEncoding extends Genome {
         for(int i = discovered.nextSetBit(0); i >= 0; i = discovered.nextSetBit(i+1)) {
             Node n = p1.nodeGenes.get(i);
             if(n == null) n = p2.nodeGenes.get(i);
-            if(n == null) throw new IllegalArgumentException("In DirectEncoding crossMultipoint, one of the parents had an edge for which it did not have the corresponding nodes.");
+            if(n == null) throw new IllegalArgumentException("In DirectEncoding crossMultipoint, one of the parents " +
+                    "had an edge for which it did not have the corresponding nodes.");
             child.nodeGenes.put(n.id, new Node(n));
         }
 
@@ -569,35 +570,36 @@ class DirectEncoding extends Genome {
     public NeuralNetwork getANN() {
         //TODO: use modified sigmoid function described in paper?
         //create lists of each type of node
-        List<Node> inputs = new ArrayList<>(),
-                outputs = new ArrayList<>(),
-                hidden = new ArrayList<>();
+        Map<Integer, Integer> nodes = new HashMap<>(nodeGenes.size()); //Map the node ID to the ANN Index
+        int inputs = 0, outputs = 0, hidden = 0, count = 0;
 
-        //create a list of enabled edges
-        List<Edge> edges = new LinkedList<Edge>();
-
-        //create a
+        //count and add inputs, must add each type separately because there is no grantee of order or number
         for(Node n : nodeGenes.values()) {
             switch(n.nodeType) {
                 case INPUT:
-                    inputs.add(n);
+                    nodes.put(n.id, count++);
+                    inputs++;
                     break;
                 case OUTPUT:
-                    outputs.add(n);
+                    outputs++;
                     break;
                 case HIDDEN:
-                    hidden.add(n);
+                    hidden++;
                     break;
             }
         }
-
-        //add all the connections to a list
-        for(Edge e : edgeGenes.values())
-            if(e.enabled)
-                edges.add(e);
+        for(Node n : nodeGenes.values())
+            if(n.nodeType == NodeType.OUTPUT)
+                nodes.put(n.id, count++);
+        for(Node n : nodeGenes.values())
+            if(n.nodeType == NodeType.HIDDEN)
+                nodes.put(n.id, count++);
 
         //construct a neural network now that we know the sizes
-        NeuralNetwork net = new NeuralNetwork(inputs.size(), outputs.size(), hidden.size());
+        NeuralNetwork.Builder net = new NeuralNetwork.Builder()
+                .inputs(inputs)
+                .outputs(outputs)
+                .hidden(hidden);
 
         //set the activation functions (not needed presently)
         /*{
@@ -611,30 +613,10 @@ class DirectEncoding extends Genome {
         }*/
 
         //TODO: make sure there are not duplicate edges making their way into the system
-        //TODO: improve efficiency of conversion
         //create the connections
-        Function<Integer, Integer> findIndex = (Integer id) -> {
-            int index = 0;
-            for(Node n : inputs) {
-                if(n.id == id) return index;
-                index++;
-            }
-            for(Node n : outputs) {
-                if(n.id == id) return index;
-                index++;
-            }
-            for(Node n : hidden) {
-                if(n.id == id) return index;
-                index++;
-            }
-            return -1;
-        };
+        for(Edge e : edgeGenes.values())
+            net.connect(nodes.get(e.fromNode), nodes.get(e.toNode), e.weight);
 
-        for(Edge e : edges) {
-            net.connect(findIndex.apply(e.fromNode), findIndex.apply(e.toNode), e.weight);
-        }
-
-        net.validate();
-        return net;
+        return net.create();
     }
 }

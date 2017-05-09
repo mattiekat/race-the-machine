@@ -19,7 +19,7 @@ public class XOR implements Runnable {
     //private static final int TOTAL_ROUNDS = 100;
 
     public XOR() {}
-    
+
     @Override
     public void run() {
         PrintStream output = new PrintStream(new FileOutputStream(FileDescriptor.out));
