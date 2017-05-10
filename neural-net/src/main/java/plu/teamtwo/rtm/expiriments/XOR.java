@@ -30,10 +30,10 @@ public class XOR implements Runnable {
         controller.createFirstGeneration();
 
         for(int g = 0; g < 1000; ++g) {
-            controller.assesGeneration(new XORScore());
+            boolean foundWinner = controller.assesGeneration(new XORScore());
             final Genome best = controller.getBestIndividual();
             System.out.println(String.format("Gen %d: %.2f, %.0f", controller.getGenerationNum(), controller.getFitness(), best.getFitness()));
-            if(best.getFitness() >= 100.0f) {
+            if(foundWinner) {
                 Gson gson = new GsonBuilder().setPrettyPrinting().create();
                 System.out.println(gson.toJson(best));
                 return;
@@ -53,7 +53,8 @@ public class XOR implements Runnable {
 
 
     private static class XORScore implements ScoringFunction {
-        private float score = 0;
+        private float error = 0;
+        private int correct = 0;
         private boolean expected;
         private int last = 0;
         private int[] order;
@@ -140,9 +141,9 @@ public class XOR implements Runnable {
          */
         @Override
         public void acceptOutput(float[] output) {
-            //score += 1.0f - Math.abs(expected - output[0]);
+            error += Math.abs((expected ? 1.0f : 0.0f) - output[0]);
             if(output[0] >= 0.5 == expected)
-                score += 1.0f;
+                correct++;
         }
 
 
@@ -154,7 +155,19 @@ public class XOR implements Runnable {
          */
         @Override
         public float getScore() {
-            return (score / 4.0f) * 100.0f;
+            //return (score / 4.0f) * 100.0f;
+            return (float)Math.pow(4.0f - error, 2);
+        }
+
+
+        /**
+         * Check if all 4 possibilities were solved.
+         *
+         * @return True if the assessment was passed.
+         */
+        @Override
+        public boolean isWinner() {
+            return correct == 4;
         }
     }
 }

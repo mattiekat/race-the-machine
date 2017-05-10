@@ -235,7 +235,7 @@ class Species implements Iterable<Genome> {
     void sortByFitness() {
         if(sorted) return;
         //sort in descending order
-        memebers.sort((Genome a, Genome b) -> (int)(b.getFitness() - a.getFitness()));
+        memebers.sort((Genome a, Genome b) -> new Float(b.getFitness()).compareTo(a.getFitness()));
         sorted = true;
     }
 }

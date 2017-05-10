@@ -13,6 +13,7 @@ import java.util.*;
 /**
  * The over-arching controller for the NEAT algorithm. Note that this is not designed to be called from multiple
  * threads and may break up tasks internally.
+ * TODO: create a population class and keep only high-level logic in NEATController
  */
 public class NEATController {
     /// Size of the total population.
@@ -144,8 +145,10 @@ public class NEATController {
      * Asses the fitness of all the members of the current generation.
      *
      * @param scoringFunction Method by which to asses how well the individuals perform.
+     * @return Returns true if this generation contains a genome which is accepted as a solution.
      */
-    public void assesGeneration(ScoringFunction scoringFunction) {
+    public boolean assesGeneration(ScoringFunction scoringFunction) {
+        boolean foundWinner = false;
         sorted = false;
         //Construct a new thread pool
         final int MAX_THREADS = scoringFunction.getMaxThreads();
@@ -162,6 +165,7 @@ public class NEATController {
                 //threadPool.submit(new GenomeProcessor(g, scoringFunction.createNew()));
                 GenomeProcessor p = new GenomeProcessor(g, scoringFunction.createNew());
                 p.run();
+                foundWinner = g.isWinner() | foundWinner;
             }
         }
 
@@ -180,6 +184,7 @@ public class NEATController {
 
         calculateFitness();
         sortByFitness();
+        return foundWinner;
     }
 
 
@@ -275,11 +280,7 @@ public class NEATController {
     private void sortByFitness() {
         if(sorted) return;
         //sort descending
-        try {
-            generation.sort((Species a, Species b) -> (int) (b.getFitness() - a.getFitness()));
-        } catch(IllegalArgumentException e) {
-            System.err.println(e.getMessage());
-        }
+        generation.sort((Species a, Species b) -> new Float(b.getFitness()).compareTo(a.getFitness()));
         for(Species s : generation)
             s.sortByFitness();
         sorted = true;
@@ -429,6 +430,7 @@ public class NEATController {
             }
 
             genome.setFitness(scoringFunction.getScore());
+            if(scoringFunction.isWinner()) genome.setWinner();
         }
     }
 }

@@ -61,4 +61,12 @@ public interface ScoringFunction {
      * @return A score which can be used to asses the fitness of the specified individual.
      */
     float getScore();
+
+
+    /**
+     * Check if the task was successfully completed. Some tasks may never qualify as completed.
+     *
+     * @return True if the assessment was passed.
+     */
+    boolean isWinner();
 }
