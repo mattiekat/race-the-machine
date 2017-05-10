@@ -45,27 +45,27 @@ public class NeuralNetworkTest {
         //Inputs:   0, 1, 2
         //Outputs:  3
         //Hidden:   4
-        //0 -> 3, 4
-        //1 -> 3, 4
-        //2 -> 3
+        //1 -> 4
+        //2 -> 4
         //4 -> 3
 
         NeuralNetwork net = new NeuralNetwork.Builder()
                 .inputs(3)
                 .outputs(1)
                 .hidden(1)
-                .connect(0, 3, -0.71f)
-                .connect(0, 4, 1.00f)
-                .connect(1, 3, 1.56f)
-                .connect(1, 4, -0.12f)
-                .connect(2, 3, -1.08f)
-                .connect(4, 3, 2.13f)
+                .connect(0, 3,  0.21f)
+                .connect(2, 3, -0.35f)
+                .connect(2, 4, -1.19f)
+                .connect(1, 3,  1.89f)
+                .connect(1, 4,  1.94f)
+                .connect(4, 3, -1.86f)
                 .create();
 
-        float[] inputs = new float[]{1.0f, 0.0f, 0.0f};
         float[] outputs;
-
-        outputs = net.calculate(inputs);
+        outputs = net.calculate(1.0f, 0.0f, 0.0f);
+        outputs = net.calculate(1.0f, 0.0f, 1.0f);
+        outputs = net.calculate(1.0f, 1.0f, 0.0f);
+        outputs = net.calculate(1.0f, 1.0f, 1.0f);
     }
 
 
