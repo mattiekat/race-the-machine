@@ -615,7 +615,8 @@ class DirectEncoding extends Genome {
         //TODO: make sure there are not duplicate edges making their way into the system
         //create the connections
         for(Edge e : edgeGenes.values())
-            net.connect(nodes.get(e.fromNode), nodes.get(e.toNode), e.weight);
+            if(e.enabled)
+                net.connect(nodes.get(e.fromNode), nodes.get(e.toNode), e.weight);
 
         return net.create();
     }
