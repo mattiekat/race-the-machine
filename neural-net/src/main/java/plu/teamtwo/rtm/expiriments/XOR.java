@@ -9,7 +9,6 @@ import plu.teamtwo.rtm.neat.ScoringFunction;
 
 import java.io.FileDescriptor;
 import java.io.FileOutputStream;
-import java.io.IOException;
 import java.io.PrintStream;
 import java.util.ArrayList;
 import java.util.Collections;
@@ -58,7 +57,7 @@ public class XOR implements Runnable {
         private boolean expected;
         private int last = 0;
         private int[] order;
-        private static final float inuputs[][] = new float[][] {
+        private static final float inputs[][] = new float[][] {
                 { 1.0f, 0.0f, 0.0f },
                 { 1.0f, 0.0f, 1.0f },
                 { 1.0f, 1.0f, 0.0f },
@@ -117,12 +116,12 @@ public class XOR implements Runnable {
          */
         @Override
         public float[] generateInput() {
-            float[] inuput = null;
+            float[] input = null;
             if(last < 4) {
-                inuput = inuputs[order[last++]];
-                expected = ((int)inuput[1] ^ (int)inuput[2]) == 1;
+                input = inputs[order[last++]];
+                expected = ((int)input[1] ^ (int)input[2]) == 1;
             }
-            return inuput;
+            return input;
 //            if(--rounds < 0) return null;
 //
 //            float a = Math.round(Math.random());
