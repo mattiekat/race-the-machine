@@ -1,8 +1,11 @@
 allprojects {
     group 'plu.teamtwo'
     version '1.0-SNAPSHOT'
-    
+
     repositories {
         mavenCentral()
+        flatDir {
+            dirs "${rootDir}/libs"
+        }
     }
 }

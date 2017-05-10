@@ -2,4 +2,5 @@ rootProject.name = 'race-the-machine'
 include 'core'
 include 'image-input'
 include 'neural-net'
+include 'client'
 
