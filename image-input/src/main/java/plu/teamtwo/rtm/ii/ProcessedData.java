@@ -1,7 +1,6 @@
 package plu.teamtwo.rtm.ii;
 
-import plu.teamtwo.rtm.ii.util.Line;
-import plu.teamtwo.rtm.ii.util.Polygon;
+import plu.teamtwo.rtm.core.util.Polygon;
 
 import java.awt.image.BufferedImage;
 import java.util.List;

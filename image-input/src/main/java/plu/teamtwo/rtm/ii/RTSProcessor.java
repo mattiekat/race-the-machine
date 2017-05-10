@@ -2,9 +2,8 @@ package plu.teamtwo.rtm.ii;
 
 import org.opencv.core.*;
 import org.opencv.imgproc.Imgproc;
-import plu.teamtwo.rtm.ii.util.Line;
-import plu.teamtwo.rtm.ii.util.Point;
-import plu.teamtwo.rtm.ii.util.Polygon;
+import plu.teamtwo.rtm.core.util.Point;
+import plu.teamtwo.rtm.core.util.Polygon;
 
 import java.util.List;
 import java.awt.*;
@@ -24,9 +23,9 @@ public class RTSProcessor {
     private ScreenCap capper;
     private final Object capSwitchLock = new Object();
 
-    private Scalar lowerBounds = new Scalar(0,0,0);
-    private Scalar upperBounds = new Scalar(255, 255, 255);
-    private final Object boundsLock = new Object();
+    //private Scalar lowerBounds = new Scalar(0,0,0);
+    //private Scalar upperBounds = new Scalar(255, 255, 255);
+    //private final Object boundsLock = new Object();
 
     private ConcurrentLinkedQueue<ProcessedData> cap_queue = new ConcurrentLinkedQueue<>();
 
@@ -58,13 +57,6 @@ public class RTSProcessor {
     public void setCapper(ScreenCap capper) {
         synchronized(capSwitchLock) {
             this.capper = capper;
-        }
-    }
-
-    public void setHSVBounds(int hMin, int sMin, int vMin, int hMax, int sMax, int vMax) {
-        synchronized(boundsLock) {
-            this.lowerBounds = new Scalar(hMin, sMin, vMin);
-            this.upperBounds = new Scalar(hMax, sMax, vMax);
         }
     }
 

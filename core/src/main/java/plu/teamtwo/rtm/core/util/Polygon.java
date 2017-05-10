@@ -1,4 +1,4 @@
-package plu.teamtwo.rtm.ii.util;
+package plu.teamtwo.rtm.core.util;
 
 import java.util.Arrays;
 import java.util.List;

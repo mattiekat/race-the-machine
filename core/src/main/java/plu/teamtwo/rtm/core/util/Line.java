@@ -1,4 +1,4 @@
-package plu.teamtwo.rtm.ii.util;
+package plu.teamtwo.rtm.core.util;
 
 /**
  * Line Utility Class. Used to represent a 2-dimensional lines comprised of two <code>Points</code>.

@@ -1,10 +1,9 @@
-package plu.teamtwo.rtm.core.gui;
+package plu.teamtwo.rtm.client.gui;
 
 import plu.teamtwo.rtm.ii.RTSProcessor;
 
-import plu.teamtwo.rtm.ii.util.Line;
-import plu.teamtwo.rtm.ii.util.Point;
-import plu.teamtwo.rtm.ii.util.Polygon;
+import plu.teamtwo.rtm.core.util.Point;
+import plu.teamtwo.rtm.core.util.Polygon;
 import plu.teamtwo.rtm.ii.ScreenCap;
 
 import java.util.List;
@@ -108,19 +107,14 @@ public class ImagePanel extends JPanel implements MouseListener {
         }
     }
 
-    @Override
-    public void mouseClicked(MouseEvent e) {
 
-    }
 
-    @Override
     public void mousePressed(MouseEvent e) {
         if(e.getClickCount() == 2) {
             firstClick = new Point(e.getX(), e.getY());
         }
     }
 
-    @Override
     public void mouseReleased(MouseEvent e) {
         if(firstClick != null) {
             Point secondClick = new Point(e.getX(), e.getY());
@@ -137,13 +131,7 @@ public class ImagePanel extends JPanel implements MouseListener {
         }
     }
 
-    @Override
-    public void mouseEntered(MouseEvent e) {
-
-    }
-
-    @Override
-    public void mouseExited(MouseEvent e) {
-
-    }
+    public void mouseClicked(MouseEvent e) { /* NOOP */ }
+    public void mouseEntered(MouseEvent e) { /* NOOP */ }
+    public void mouseExited(MouseEvent e) { /* NOOP */ }
 }

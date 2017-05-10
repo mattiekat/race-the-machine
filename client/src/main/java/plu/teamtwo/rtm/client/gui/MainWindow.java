@@ -1,4 +1,4 @@
-package plu.teamtwo.rtm.core.gui;
+package plu.teamtwo.rtm.client.gui;
 
 import plu.teamtwo.rtm.ii.ProcessedData;
 import plu.teamtwo.rtm.ii.RTSProcessor;
@@ -10,18 +10,10 @@ import java.awt.*;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 
-public class MainWindow extends JFrame implements RTSProcessor.ProcessingListener, ChangeListener {
+public class MainWindow extends JFrame implements RTSProcessor.ProcessingListener {
 
     private ImagePanel img_panel_capture;
     private ImagePanel img_panel_processed;
-
-    private JSlider slid_H_min;
-    private JSlider slid_S_min;
-    private JSlider slid_V_min;
-
-    private JSlider slid_H_max;
-    private JSlider slid_S_max;
-    private JSlider slid_V_max;
 
     protected final RTSProcessor rtsp;
 
@@ -36,29 +28,6 @@ public class MainWindow extends JFrame implements RTSProcessor.ProcessingListene
 
         JPanel pane = new JPanel();
         pane.setLayout(new GridLayout(2, 3));
-
-        slid_H_min = new JSlider(0, 255, 0);
-        slid_S_min = new JSlider(0, 255, 0);
-        slid_V_min = new JSlider(0, 255, 100);
-
-        slid_H_max = new JSlider(0, 255, 255);
-        slid_S_max = new JSlider(0, 255, 255);
-        slid_V_max = new JSlider(0, 255, 255);
-
-        slid_H_min.addChangeListener(this);
-        slid_S_min.addChangeListener(this);
-        slid_V_min.addChangeListener(this);
-        slid_H_max.addChangeListener(this);
-        slid_S_max.addChangeListener(this);
-        slid_V_max.addChangeListener(this);
-
-        pane.add(slid_H_min);
-        pane.add(slid_S_min);
-        pane.add(slid_V_min);
-
-        pane.add(slid_H_max);
-        pane.add(slid_S_max);
-        pane.add(slid_V_max);
 
         this.add(pane, BorderLayout.NORTH);
 
@@ -75,27 +44,9 @@ public class MainWindow extends JFrame implements RTSProcessor.ProcessingListene
         this.setVisible(true);
     }
 
-    /**
-     * Invoked when the target of the listener has changed its state.
-     *
-     * @param e a ChangeEvent object
-     */
-    @Override
-    public void stateChanged(ChangeEvent e) {
-        rtsp.setHSVBounds(
-                slid_H_min.getValue(),
-                slid_S_min.getValue(),
-                slid_V_min.getValue(),
-                slid_H_max.getValue(),
-                slid_S_max.getValue(),
-                slid_V_max.getValue()
-        );
-    }
-
-    @Override
     public void frameProcessed() {
         SwingUtilities.invokeLater(new Runnable(){
-            @Override public void run() {
+            public void run() {
                 ProcessedData data = rtsp.getNext();
                 img_panel_capture.setContents(data.capturedImage, data.polygons);
                 img_panel_processed.setContents(data.processedImage, data.polygons);
