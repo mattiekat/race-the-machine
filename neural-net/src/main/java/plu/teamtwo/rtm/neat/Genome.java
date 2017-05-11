@@ -3,7 +3,10 @@ package plu.teamtwo.rtm.neat;
 import plu.teamtwo.rtm.neural.NeuralNetwork;
 
 public abstract class Genome {
+    /// Fitness score determined by the evaluation function.
     private float fitness = 0;
+    /// This genome should be marked a winner iff it fulfills the requirements of the evaluation function.
+    private boolean winner = false;
 
 
     /**
@@ -14,8 +17,8 @@ public abstract class Genome {
      * @param p2    Second parent, the less fit of the two.
      * @return A child which is the result of crossing the genomes
      */
-    static Genome cross(GenomeCache cache, Genome p1, Genome p2) {
-        return p1.cross(cache, p2);
+    static Genome crossMultipoint(GenomeCache cache, Genome p1, Genome p2) {
+        return p1.crossMultipoint(cache, p2);
     }
 
 
@@ -52,8 +55,26 @@ public abstract class Genome {
 
 
     /**
+     * Set a flag representing that this genome has completely fulfilled the task defined by the evaluation function.
+     */
+    public void setWinner() {
+        winner = true;
+    }
+
+
+    /**
+     * Find out whether this genome has completely fulfilled the task defined by the evaluation function.
+     *
+     * @return True if this genome is an accepted solution to the evaluation function.
+     */
+    public boolean isWinner() {
+        return winner;
+    }
+
+
+    /**
      * Used for initial members of the first generation to create connections between the inputs and outputs. This
-     * should not be needed after the first generation. It is reccomended that mutate be called after this function to
+     * should not be needed after the first generation. It is recommended that mutate be called after this function to
      * give the initial species some variation.
      *
      * @param cache Cached information about the Genome.
@@ -93,7 +114,18 @@ public abstract class Genome {
      * @param other The other parent.
      * @return A child which is the result of crossing the genomes
      */
-    abstract Genome cross(GenomeCache cache, Genome other);
+    abstract Genome crossMultipoint(GenomeCache cache, Genome other);
+
+
+    /**
+     * Cross the genomes of two parents to create a child. This will take the disjoint and excess genes from the most
+     * fit parent and average the values of the matching ones.
+     *
+     * @param cache Cached information about the genome.
+     * @param other The other parent.
+     * @return A child which is the result of crossing the genomes
+     */
+    abstract Genome crossMultipointAvg(GenomeCache cache, Genome other);
 
 
     /**

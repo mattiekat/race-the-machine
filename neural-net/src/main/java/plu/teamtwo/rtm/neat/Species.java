@@ -1,8 +1,10 @@
 package plu.teamtwo.rtm.neat;
 
-import static plu.teamtwo.rtm.core.util.Rand.getRandomNum;
+import java.util.ArrayList;
+import java.util.Iterator;
+import java.util.List;
 
-import java.util.*;
+import static plu.teamtwo.rtm.core.util.Rand.getRandomNum;
 
 class Species implements Iterable<Genome> {
     /// Threshold used in compatibility distance to determine if two individuals are in the same species (δt).
@@ -235,7 +237,7 @@ class Species implements Iterable<Genome> {
     void sortByFitness() {
         if(sorted) return;
         //sort in descending order
-        memebers.sort((Genome a, Genome b) -> (int)(b.getFitness() - a.getFitness()));
+        memebers.sort((Genome a, Genome b) -> new Float(b.getFitness()).compareTo(a.getFitness()));
         sorted = true;
     }
 }

@@ -4,15 +4,17 @@ import com.google.gson.Gson;
 import com.google.gson.stream.JsonReader;
 import com.google.gson.stream.JsonWriter;
 import plu.teamtwo.rtm.neural.NeuralNetwork;
-import static plu.teamtwo.rtm.core.util.Rand.*;
 
 import java.io.*;
 import java.security.InvalidParameterException;
 import java.util.*;
 
+import static plu.teamtwo.rtm.core.util.Rand.*;
+
 /**
  * The over-arching controller for the NEAT algorithm. Note that this is not designed to be called from multiple
  * threads and may break up tasks internally.
+ * TODO: create a population class and keep only high-level logic in NEATController
  */
 public class NEATController {
     /// Size of the total population.
@@ -27,6 +29,9 @@ public class NEATController {
     private static final int SPECIES_SIZE_TO_PROTECT_LEADER = 5;
     /// Percent of children in the next generation which are produced by crossover.
     private static final float BREEDING_CROSSOVER_RATE = 0.75f;
+    /// Percent change of using Multipoint crossover; will use MULTIPOINT_AVG if not this.
+    private static final float BREEDING_CROSSOVER_MULTIPOINT = 0.6f;
+    //private static final float BREEDING_CROSSOVER_MULTIPOINT_AVG = 0.4f;
     /// The percentage of a species which will make it to the breeding phase.
     private static final float BREEDING_SURVIVAL_THRESHOLD = 0.20f;
     /// Desired number of species.
@@ -141,8 +146,10 @@ public class NEATController {
      * Asses the fitness of all the members of the current generation.
      *
      * @param scoringFunction Method by which to asses how well the individuals perform.
+     * @return Returns true if this generation contains a genome which is accepted as a solution.
      */
-    public void assesGeneration(ScoringFunction scoringFunction) {
+    public boolean assesGeneration(ScoringFunction scoringFunction) {
+        boolean foundWinner = false;
         sorted = false;
         //Construct a new thread pool
         final int MAX_THREADS = scoringFunction.getMaxThreads();
@@ -159,6 +166,7 @@ public class NEATController {
                 //threadPool.submit(new GenomeProcessor(g, scoringFunction.createNew()));
                 GenomeProcessor p = new GenomeProcessor(g, scoringFunction.createNew());
                 p.run();
+                foundWinner = g.isWinner() | foundWinner;
             }
         }
 
@@ -177,6 +185,7 @@ public class NEATController {
 
         calculateFitness();
         sortByFitness();
+        return foundWinner;
     }
 
 
@@ -272,11 +281,7 @@ public class NEATController {
     private void sortByFitness() {
         if(sorted) return;
         //sort descending
-        try {
-            generation.sort((Species a, Species b) -> (int) (b.getFitness() - a.getFitness()));
-        } catch(IllegalArgumentException e) {
-            System.err.println(e.getMessage());
-        }
+        generation.sort((Species a, Species b) -> new Float(b.getFitness()).compareTo(a.getFitness()));
         for(Species s : generation)
             s.sortByFitness();
         sorted = true;
@@ -362,8 +367,10 @@ public class NEATController {
                     p2 = species.getNthMostFit(i2);
                 }
 
-                //cross the parents //TODO: use differing cross methods
-                child = p1.cross(cache, p2);
+                //cross the parents
+                child = iWill(BREEDING_CROSSOVER_MULTIPOINT) ?
+                        p1.crossMultipoint(cache, p2) :
+                        p1.crossMultipointAvg(cache, p2);
 
                 //determine if we will mutate the child's genome, do this at random or always if parents are the same
                 if(iWill(BREEDING_CROSSOVER_RATE) || p1.compatibilityDistance(p2) == 0.0f)
@@ -414,14 +421,17 @@ public class NEATController {
         @Override
         public void run() {
             NeuralNetwork network = genome.getANN();
+            final boolean flushBetween = scoringFunction.flushBetween();
 
             float[] input;
             while((input = scoringFunction.generateInput()) != null) {
-                float[] output = network.calculate(input, false);
+                if(flushBetween) network.flush();
+                float[] output = network.calculate(input);
                 scoringFunction.acceptOutput(output);
             }
 
             genome.setFitness(scoringFunction.getScore());
+            if(scoringFunction.isWinner()) genome.setWinner();
         }
     }
 }

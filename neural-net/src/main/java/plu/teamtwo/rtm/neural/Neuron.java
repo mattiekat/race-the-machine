@@ -17,6 +17,7 @@ class Neuron {
 
     /**
      * Construct a new neuron with specified activation function.
+     *
      * @param activationFunction The activation function to use.
      */
     Neuron(ActivationFunction activationFunction) {
@@ -26,6 +27,7 @@ class Neuron {
 
     /**
      * Input a value into this node. Internally this will sum all the inputs until calculate is called.
+     *
      * @param input Value to input for next calculation.
      */
     void inputValue(float input) {
@@ -35,6 +37,7 @@ class Neuron {
 
     /**
      * Calculate the value for this neuron
+     *
      * @return The calculated value.
      */
     float calculate() {
@@ -49,5 +52,15 @@ class Neuron {
      */
     float getOutput() {
         return output;
+    }
+
+
+    /**
+     * Flush this neuron of all calculated information.
+     * Does not alter the structure.
+     */
+    void flush() {
+        input = 0.0f;
+        output = 0.0f;
     }
 }

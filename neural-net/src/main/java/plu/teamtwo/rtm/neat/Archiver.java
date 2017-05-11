@@ -2,6 +2,7 @@ package plu.teamtwo.rtm.neat;
 
 import java.io.*;
 import java.security.InvalidParameterException;
+
 import static plu.teamtwo.rtm.neat.NEATController.readFromStream;
 import static plu.teamtwo.rtm.neat.NEATController.writeToStream;
 

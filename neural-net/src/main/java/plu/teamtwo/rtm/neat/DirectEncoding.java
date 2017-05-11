@@ -4,7 +4,6 @@ import plu.teamtwo.rtm.neural.NeuralNetwork;
 
 import java.security.InvalidParameterException;
 import java.util.*;
-import java.util.function.Function;
 
 import static plu.teamtwo.rtm.core.util.Rand.getRandomNum;
 import static plu.teamtwo.rtm.core.util.Rand.iWill;
@@ -17,7 +16,7 @@ class DirectEncoding extends Genome {
     /// Chance for a new edge to be added to the system.
     private static final float MUTATE_NEW_EDGE = 0.05f;
     // Number of times it should try to mutate a new edge
-    private static final int MUTATE_NEW_EDGE_TRIES = 20;
+    private static final int MUTATE_NEW_EDGE_TRIES = 30;
     /// Chance for a node to be added to the system.
     private static final float MUTATE_NEW_NODE = 0.03f;
     /// Chance for an edge's enabled status to be flipped.
@@ -106,15 +105,16 @@ class DirectEncoding extends Genome {
      * @param p2    Second parent.
      * @return A child which is the result of crossing the genomes
      */
-    public static DirectEncoding cross(DirectEncodingCache cache, DirectEncoding p1, DirectEncoding p2) {
-        //make p1 the most fit parent
-        if(p1.getFitness() < p2.getFitness()) {
+    public static DirectEncoding crossMultipoint(DirectEncodingCache cache, DirectEncoding p1, DirectEncoding p2, boolean average) {
+        //make p1 the most fit parent, or if equal, the one with the least genes
+        if(p1.getFitness() < p2.getFitness() || (p1.getFitness() == p2.getFitness() &&
+                p1.edgeGenes.size() + p1.nodeGenes.size() >
+                p2.edgeGenes.size() + p2.nodeGenes.size()) )
+        {
             DirectEncoding t = p1;
             p1 = p2;
             p2 = t;
         }
-
-        final boolean equal = p1.getFitness() == p2.getFitness();
 
         //go through both parents and line up innovation numbers
         // always sorted because it is a TreeSet
@@ -130,16 +130,19 @@ class DirectEncoding extends Genome {
             if(e1 != null && e2 == null) { //e1 is an excess node
                 child.edgeGenes.put(e1.id, new Edge(e1));
                 step1 = true;
-            } else if(e1 == null && e2 != null) { //e2 is an excess node
-                if(equal) child.edgeGenes.put(e2.id, new Edge(e2));
+            }
+            else if(e1 == null && e2 != null) { //e2 is an excess node
                 step2 = true;
             }
             else if(e1.id < e2.id) { //e1 is a disjoint node
                 child.edgeGenes.put(e1.id, new Edge(e1));
                 step1 = true;
-            } else if(e1.id == e2.id) {
-                //select edge at random
-                Edge edge = new Edge(getRandomNum(0.0f, 1.0f) < 0.5f ? e1 : e2);
+            }
+            else if(e1.id == e2.id) {
+                //choose either randomly from the parents or average the weight
+                Edge edge = average ?
+                        new Edge(e1.id, e1.fromNode, e1.toNode, (e1.weight + e2.weight) / 2.0f) :
+                        new Edge(iWill(0.5f) ? e1 : e2);
 
                 //chance to disable child if either parent is disabled
                 if(!e1.enabled || !e2.enabled)
@@ -149,8 +152,8 @@ class DirectEncoding extends Genome {
                 //add the new edge to the list
                 child.edgeGenes.put(edge.id, edge);
                 step1 = step2 = true;
-            } else { // e1.id > e2.id //e2 is a disjoint node
-                if(equal) child.edgeGenes.put(e2.id, new Edge(e2));
+            }
+            else { // e1.id > e2.id //e2 is a disjoint node
                 step2 = true;
             }
 
@@ -171,7 +174,8 @@ class DirectEncoding extends Genome {
         for(int i = discovered.nextSetBit(0); i >= 0; i = discovered.nextSetBit(i+1)) {
             Node n = p1.nodeGenes.get(i);
             if(n == null) n = p2.nodeGenes.get(i);
-            if(n == null) throw new IllegalArgumentException("In DirectEncoding cross, one of the parents had an edge for which it did not have the corresponding nodes.");
+            if(n == null) throw new IllegalArgumentException("In DirectEncoding crossMultipoint, one of the parents " +
+                    "had an edge for which it did not have the corresponding nodes.");
             child.nodeGenes.put(n.id, new Node(n));
         }
 
@@ -242,8 +246,22 @@ class DirectEncoding extends Genome {
      * @return A child which is the result of crossing the genomes
      */
     @Override
-    public DirectEncoding cross(GenomeCache cache, Genome other) {
-        return cross((DirectEncodingCache) cache, this, (DirectEncoding) other);
+    public DirectEncoding crossMultipoint(GenomeCache cache, Genome other) {
+        return crossMultipoint((DirectEncodingCache) cache, this, (DirectEncoding) other, false);
+    }
+
+
+    /**
+     * Cross the genomes of two parents to create a child. This will take the disjoint and excess genes from the most
+     * fit parent and average the values of the matching ones.
+     *
+     * @param cache Cached information about the genome.
+     * @param other The other parent.
+     * @return A child which is the result of crossing the genomes
+     */
+    @Override
+    Genome crossMultipointAvg(GenomeCache cache, Genome other) {
+        return crossMultipoint((DirectEncodingCache) cache, this, (DirectEncoding) other, true);
     }
 
 
@@ -365,6 +383,7 @@ class DirectEncoding extends Genome {
                 final int toIndex = getRandomNum(0, nodeGenes.size() - 1);
                 from = nodeIndexToID(fromIndex);
                 to = nodeIndexToID(toIndex);
+                if(++x > MUTATE_NEW_EDGE_TRIES) return;
             } while(!MUTATE_RECURRENT_EDGES && isRecurrent(from, to));
 
             //add the edge and make sure it is enabled if it was already there.
@@ -550,35 +569,36 @@ class DirectEncoding extends Genome {
     public NeuralNetwork getANN() {
         //TODO: use modified sigmoid function described in paper?
         //create lists of each type of node
-        List<Node> inputs = new ArrayList<>(),
-                outputs = new ArrayList<>(),
-                hidden = new ArrayList<>();
+        Map<Integer, Integer> nodes = new HashMap<>(nodeGenes.size()); //Map the node ID to the ANN Index
+        int inputs = 0, outputs = 0, hidden = 0, count = 0;
 
-        //create a list of enabled edges
-        List<Edge> edges = new LinkedList<Edge>();
-
-        //create a
+        //count and add inputs, must add each type separately because there is no grantee of order or number
         for(Node n : nodeGenes.values()) {
             switch(n.nodeType) {
                 case INPUT:
-                    inputs.add(n);
+                    nodes.put(n.id, count++);
+                    inputs++;
                     break;
                 case OUTPUT:
-                    outputs.add(n);
+                    outputs++;
                     break;
                 case HIDDEN:
-                    hidden.add(n);
+                    hidden++;
                     break;
             }
         }
-
-        //add all the connections to a list
-        for(Edge e : edgeGenes.values())
-            if(e.enabled)
-                edges.add(e);
+        for(Node n : nodeGenes.values())
+            if(n.nodeType == NodeType.OUTPUT)
+                nodes.put(n.id, count++);
+        for(Node n : nodeGenes.values())
+            if(n.nodeType == NodeType.HIDDEN)
+                nodes.put(n.id, count++);
 
         //construct a neural network now that we know the sizes
-        NeuralNetwork net = new NeuralNetwork(inputs.size(), outputs.size(), hidden.size());
+        NeuralNetwork.Builder net = new NeuralNetwork.Builder()
+                .inputs(inputs)
+                .outputs(outputs)
+                .hidden(hidden);
 
         //set the activation functions (not needed presently)
         /*{
@@ -592,30 +612,11 @@ class DirectEncoding extends Genome {
         }*/
 
         //TODO: make sure there are not duplicate edges making their way into the system
-        //TODO: improve efficiency of conversion
         //create the connections
-        Function<Integer, Integer> findIndex = (Integer id) -> {
-            int index = 0;
-            for(Node n : inputs) {
-                if(n.id == id) return index;
-                index++;
-            }
-            for(Node n : outputs) {
-                if(n.id == id) return index;
-                index++;
-            }
-            for(Node n : hidden) {
-                if(n.id == id) return index;
-                index++;
-            }
-            return -1;
-        };
+        for(Edge e : edgeGenes.values())
+            if(e.enabled)
+                net.connect(nodes.get(e.fromNode), nodes.get(e.toNode), e.weight);
 
-        for(Edge e : edges) {
-            net.connect(findIndex.apply(e.fromNode), findIndex.apply(e.toNode), e.weight);
-        }
-
-        net.validate();
-        return net;
+        return net.create();
     }
 }

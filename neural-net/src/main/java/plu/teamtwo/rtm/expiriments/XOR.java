@@ -1,6 +1,7 @@
 package plu.teamtwo.rtm.expiriments;
 
 import com.google.gson.Gson;
+import com.google.gson.GsonBuilder;
 import plu.teamtwo.rtm.neat.Encoding;
 import plu.teamtwo.rtm.neat.Genome;
 import plu.teamtwo.rtm.neat.NEATController;
@@ -8,13 +9,18 @@ import plu.teamtwo.rtm.neat.ScoringFunction;
 
 import java.io.FileDescriptor;
 import java.io.FileOutputStream;
-import java.io.IOException;
 import java.io.PrintStream;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.List;
 
-public class XOR {
-    private static final int TOTAL_ROUNDS = 100;
+public class XOR implements Runnable {
+    //private static final int TOTAL_ROUNDS = 100;
 
-    public static void main(String[] args) {
+    public XOR() {}
+
+    @Override
+    public void run() {
         PrintStream output = new PrintStream(new FileOutputStream(FileDescriptor.out));
         NEATController controller = new NEATController(
                 Encoding.DIRECT_ENCODING,
@@ -23,29 +29,44 @@ public class XOR {
 
         controller.createFirstGeneration();
 
-        for(int g = 0; g < 200; ++g) {
-            controller.assesGeneration(new XORScore());
+        for(int g = 0; g < 1000; ++g) {
+            boolean foundWinner = controller.assesGeneration(new XORScore());
             final Genome best = controller.getBestIndividual();
             System.out.println(String.format("Gen %d: %.2f, %.0f", controller.getGenerationNum(), controller.getFitness(), best.getFitness()));
-            if(best.getFitness() >= 99.5f) {
-                Gson gson = new Gson();
+            if(foundWinner) {
+                Gson gson = new GsonBuilder().setPrettyPrinting().create();
                 System.out.println(gson.toJson(best));
                 return;
             }
             controller.nextGeneration();
         }
-//        try {
-//            NEATController.writeToStream(controller, output);
-//        } catch(IOException e) {
-//            System.err.println(e.getMessage());
-//        }
+    }
+
+    public static void main(String[] args) {
+        new XOR().run();
     }
 
 
     private static class XORScore implements ScoringFunction {
-        private int rounds = TOTAL_ROUNDS;
-        private float score = 0;
+        private float error = 0;
+        private int correct = 0;
         private boolean expected;
+        private int last = 0;
+        private int[] order;
+        private static final float inputs[][] = new float[][] {
+                { 1.0f, 0.0f, 0.0f },
+                { 1.0f, 0.0f, 1.0f },
+                { 1.0f, 1.0f, 0.0f },
+                { 1.0f, 1.0f, 1.0f }
+        };
+
+        XORScore() {
+            List<Integer> shuffle = new ArrayList<>();
+            for (int i = 0; i < 4; i++)
+                shuffle.add(i % 4);
+            Collections.shuffle(shuffle);
+            order = shuffle.stream().mapToInt(i -> i).toArray();
+        }
 
         /**
          * This will be called to determine how many simultaneous instances of the function can exist.
@@ -55,6 +76,18 @@ public class XOR {
         @Override
         public int getMaxThreads() {
             return 1;
+        }
+
+
+        /**
+         * This will be called to determine if the neural network should be flushed between inputs.
+         * It will only be called once.
+         *
+         * @return True if the network should be flushed between inputs.
+         */
+        @Override
+        public boolean flushBetween() {
+            return true;
         }
 
 
@@ -79,13 +112,19 @@ public class XOR {
          */
         @Override
         public float[] generateInput() {
-            if(--rounds < 0) return null;
-
-            float a = Math.round(Math.random());
-            float b = Math.round(Math.random());
-            expected = ((int)a ^ (int)b) == 1;
-
-            return new float[]{1.0f, a, b};
+            float[] input = null;
+            if(last < 4) {
+                input = inputs[order[last++]];
+                expected = ((int)input[1] ^ (int)input[2]) == 1;
+            }
+            return input;
+//            if(--rounds < 0) return null;
+//
+//            float a = Math.round(Math.random());
+//            float b = Math.round(Math.random());
+//            expected = ((int)a ^ (int)b) == 1;
+//
+//            return new float[]{1.0f, a, b};
         }
 
 
@@ -97,9 +136,9 @@ public class XOR {
          */
         @Override
         public void acceptOutput(float[] output) {
-            //score += 1.0f - Math.abs(expected - output[0]);
+            error += Math.abs((expected ? 1.0f : 0.0f) - output[0]);
             if(output[0] >= 0.5 == expected)
-                score += 1.0f;
+                correct++;
         }
 
 
@@ -111,7 +150,19 @@ public class XOR {
          */
         @Override
         public float getScore() {
-            return score;
+            //return (score / 4.0f) * 100.0f;
+            return (float)Math.pow(4.0f - error, 2);
+        }
+
+
+        /**
+         * Check if all 4 possibilities were solved.
+         *
+         * @return True if the assessment was passed.
+         */
+        @Override
+        public boolean isWinner() {
+            return correct == 4;
         }
     }
 }
