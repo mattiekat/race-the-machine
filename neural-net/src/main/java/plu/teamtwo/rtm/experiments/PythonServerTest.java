@@ -1,4 +1,4 @@
-package plu.teamtwo.rtm.expiriments;
+package plu.teamtwo.rtm.experiments;
 
 import py4j.GatewayServer;
 

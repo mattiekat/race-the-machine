@@ -1,4 +1,4 @@
-package plu.teamtwo.rtm.expiriments;
+package plu.teamtwo.rtm.experiments;
 
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
@@ -32,7 +32,7 @@ public class XOR implements Runnable {
         for(int g = 0; g < 1000; ++g) {
             boolean foundWinner = controller.assesGeneration(new XORScore());
             final Genome best = controller.getBestIndividual();
-            System.out.println(String.format("Gen %d: %.2f, %.0f", controller.getGenerationNum(), controller.getFitness(), best.getFitness()));
+            System.out.println(String.format("Gen %d: %.2f, %.1f", controller.getGenerationNum(), controller.getFitness(), best.getFitness()));
             if(foundWinner) {
                 Gson gson = new GsonBuilder().setPrettyPrinting().create();
                 System.out.println(gson.toJson(best));

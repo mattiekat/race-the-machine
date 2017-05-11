@@ -1,4 +1,4 @@
-package plu.teamtwo.rtm.expiriments;
+package plu.teamtwo.rtm.experiments;
 
 import plu.teamtwo.rtm.neat.Encoding;
 import plu.teamtwo.rtm.neat.NEATController;
