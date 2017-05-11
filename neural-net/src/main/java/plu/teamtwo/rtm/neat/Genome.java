@@ -143,9 +143,4 @@ public abstract class Genome {
      * @return The ANN represented by the genome.
      */
     public abstract NeuralNetwork getANN();
-
-//    @Override
-//    public boolean equals(Object other) {
-//        return false;
-//    }
 }

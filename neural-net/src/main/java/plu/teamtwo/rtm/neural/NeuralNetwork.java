@@ -1,7 +1,6 @@
 package plu.teamtwo.rtm.neural;
 
 
-import plu.teamtwo.rtm.core.util.Triple;
 import plu.teamtwo.rtm.core.util.Pair;
 
 import java.security.InvalidParameterException;
@@ -91,6 +90,13 @@ public class NeuralNetwork {
     }
 
 
+    /**
+     * Run through the neural network until the difference each of the inputs is within the acceptable range or the
+     * maximum number of cycles has been run.
+     *
+     * @param inputs  Array of values to set the input neurons to.
+     * @return Output of the network.
+     */
     public float[] calculate(float... inputs) {
         return calculate(DEFAULT_MAX_RECURRENT_CYCLES, DEFAULT_MAX_DIFFERENCE_BETWEEN_OUTPUTS, inputs);
     }

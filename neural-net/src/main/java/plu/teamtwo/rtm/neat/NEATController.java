@@ -4,11 +4,12 @@ import com.google.gson.Gson;
 import com.google.gson.stream.JsonReader;
 import com.google.gson.stream.JsonWriter;
 import plu.teamtwo.rtm.neural.NeuralNetwork;
-import static plu.teamtwo.rtm.core.util.Rand.*;
 
 import java.io.*;
 import java.security.InvalidParameterException;
 import java.util.*;
+
+import static plu.teamtwo.rtm.core.util.Rand.*;
 
 /**
  * The over-arching controller for the NEAT algorithm. Note that this is not designed to be called from multiple

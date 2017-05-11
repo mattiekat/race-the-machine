@@ -40,11 +40,6 @@ public class XOR implements Runnable {
             }
             controller.nextGeneration();
         }
-//        try {
-//            NEATController.writeToStream(controller, output);
-//        } catch(IOException e) {
-//            System.err.println(e.getMessage());
-//        }
     }
 
     public static void main(String[] args) {

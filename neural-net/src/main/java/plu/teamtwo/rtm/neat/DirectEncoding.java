@@ -4,7 +4,6 @@ import plu.teamtwo.rtm.neural.NeuralNetwork;
 
 import java.security.InvalidParameterException;
 import java.util.*;
-import java.util.function.Function;
 
 import static plu.teamtwo.rtm.core.util.Rand.getRandomNum;
 import static plu.teamtwo.rtm.core.util.Rand.iWill;
