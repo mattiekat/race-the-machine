@@ -18,7 +18,15 @@ public class PythonInterfaceTest {
     public void notifyAllListeners(String message) {
         int x = 0;
         for(Listener l : listeners)
-            System.out.println(l.notify(message, x++));
+            System.out.println(l.notify(message));
+    }
+
+
+    public void duplicateAll() {
+        LinkedList<Listener> dups = new LinkedList<>();
+        for(Listener l : listeners)
+            dups.add(l.duplicate());
+        listeners.addAll(dups);
     }
 
 
@@ -30,6 +38,7 @@ public class PythonInterfaceTest {
 
 
     public interface Listener {
-        String notify(String input, int x);
+        String notify(String input);
+        Listener duplicate();
     }
 }
