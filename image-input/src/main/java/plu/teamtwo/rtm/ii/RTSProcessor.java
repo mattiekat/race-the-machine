@@ -15,17 +15,16 @@ import java.util.concurrent.ConcurrentLinkedQueue;
 
 public class RTSProcessor {
 
-    private Runner runner = null;
+    private ProcessRunner processRunner = null;
+    private Thread processThread = null;
+    private ListenRunner listenRunner = null;
+    private Thread listenThread = null;
 
     // Atomic, so synchronization isn't needed
     private int fps = 0;
 
     private ScreenCap capper;
     private final Object capSwitchLock = new Object();
-
-    //private Scalar lowerBounds = new Scalar(0,0,0);
-    //private Scalar upperBounds = new Scalar(255, 255, 255);
-    //private final Object boundsLock = new Object();
 
     private ConcurrentLinkedQueue<ProcessedData> cap_queue = new ConcurrentLinkedQueue<>();
 
@@ -39,19 +38,38 @@ public class RTSProcessor {
 
     public int getFPS() { return fps; }
 
-    public ProcessedData getNext() { return cap_queue.poll(); }
+    //public ProcessedData getNext() { return cap_queue.poll(); }
 
     public synchronized void start() {
-        if(runner == null) {
-            runner = new Runner();
-            Thread thread = new Thread(runner);
-            thread.start();
+
+        // Start the process runner
+        if(processRunner == null) {
+            processRunner = new ProcessRunner();
+            processThread = new Thread(processRunner);
+            processThread.start();
+        }
+
+        // Start the listen runner
+        if(listenRunner == null) {
+            listenRunner = new ListenRunner();
+            listenThread = new Thread(listenRunner);
+            listenThread.start();
         }
     }
 
     public synchronized void stop() {
-        if(runner != null) runner.running = false;
-        runner = null;
+
+        // Stop the process runner
+        if(processRunner != null) processRunner.running = false;
+        processRunner = null;
+        if(processThread != null) processThread.interrupt();
+        processThread = null;
+
+        // Stop the listen runner
+        if(listenRunner != null) listenRunner.running = false;
+        listenRunner = null;
+        if(listenThread != null) listenThread.interrupt();
+        listenThread = null;
     }
 
     public void setCapper(ScreenCap capper) {
@@ -77,7 +95,7 @@ public class RTSProcessor {
     public Rectangle getArea() { return capper.getArea(); }
 
     public interface ProcessingListener {
-        void frameProcessed();
+        void frameProcessed(ProcessedData data);
     }
 
     private final HashSet<ProcessingListener> listeners = new HashSet<>();
@@ -94,9 +112,46 @@ public class RTSProcessor {
         }
     }
 
-    private class Runner implements Runnable {
+    private class ListenRunner implements Runnable {
 
-        public boolean running = true;
+        boolean running = true;
+
+        @Override
+        public void run() {
+            while(running) {
+
+                // Wait until there is data that has been processed
+                while(cap_queue.isEmpty()) {
+                    try {
+                        synchronized(this) {
+                            this.wait();
+                        }
+                    } catch(InterruptedException ex) {
+                        running = false;
+                        break;
+                    }
+                }
+
+                // Thread was interrupted / stopped
+                if(!running || cap_queue.isEmpty()) break;
+
+                // Send processed data to listeners
+                ProcessedData data = cap_queue.poll();
+                synchronized(listeners) {
+                    for(ProcessingListener listener : listeners)
+                        listener.frameProcessed(data);
+                }
+            }
+        }
+
+        public synchronized void wake() {
+            this.notifyAll();
+        }
+    }
+
+    private class ProcessRunner implements Runnable {
+
+        boolean running = true;
 
         @Override
         public void run() {
@@ -104,13 +159,19 @@ public class RTSProcessor {
             int count = 0;
             long current_time = System.currentTimeMillis();
             while(running) {
+
+                // Get Screencap
                 BufferedImage cap;
                 synchronized(capSwitchLock) {
                     cap = capper.capture();
                 }
-                //cap_queue.offer(cap);
+
+                // Process the Screencap
                 cap_queue.offer(processImg(cap));
                 if(cap_queue.size() > 300) cap_queue.poll();
+                //ProcessedData data = processImg(cap);
+
+                // Calculate current FPS
                 count++;
                 long new_time = System.currentTimeMillis();
                 total_time += (new_time - current_time);
@@ -121,11 +182,8 @@ public class RTSProcessor {
                 }
                 current_time = new_time;
 
-                // TODO: Parallelize RTSProcessor Listener updates
-                synchronized(listeners) {
-                    for(ProcessingListener listener : listeners)
-                        listener.frameProcessed();
-                }
+                // Notify the other thread to make sure its awake
+                if(listenRunner != null) listenRunner.wake();
             }
         }
 

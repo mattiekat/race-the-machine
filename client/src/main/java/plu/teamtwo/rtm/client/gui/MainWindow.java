@@ -44,15 +44,12 @@ public class MainWindow extends JFrame implements RTSProcessor.ProcessingListene
         this.setVisible(true);
     }
 
-    public void frameProcessed() {
-        SwingUtilities.invokeLater(new Runnable(){
-            public void run() {
-                ProcessedData data = rtsp.getNext();
+    @Override
+    public void frameProcessed(ProcessedData data) {
+        SwingUtilities.invokeLater(() -> {
                 img_panel_capture.setContents(data.capturedImage, data.polygons);
                 img_panel_processed.setContents(data.processedImage, data.polygons);
-                // TODO: Send Data to Neural Network
                 repaint();
-            }
-        });
+            });
     }
 }
