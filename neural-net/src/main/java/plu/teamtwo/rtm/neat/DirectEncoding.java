@@ -20,7 +20,7 @@ class DirectEncoding extends Genome {
     /// Chance for a node to be added to the system.
     private static final float MUTATE_NEW_NODE = 0.03f;
     /// Chance for an edge's enabled status to be flipped.
-    private static final float MUTATE_EDGE_TOGGLE = 0.0f;
+    private static final float MUTATE_EDGE_TOGGLE = 0.04f;
     /// True if the genome is allowed to mutate recurrent edges
     private static final boolean MUTATE_RECURRENT_EDGES = false;
     /// Chance to disable an edge if either parent had it disabled.

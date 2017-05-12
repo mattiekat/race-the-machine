@@ -430,7 +430,7 @@ public class NEATController {
                 scoringFunction.acceptOutput(output);
             }
 
-            genome.setFitness(scoringFunction.getScore());
+            genome.setFitness((float)scoringFunction.getScore());
             if(scoringFunction.isWinner()) genome.setWinner();
         }
     }

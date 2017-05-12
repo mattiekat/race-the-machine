@@ -149,9 +149,9 @@ public class XOR implements Runnable {
          * @return A score which can be used to asses the fitness of the specified individual.
          */
         @Override
-        public float getScore() {
+        public double getScore() {
             //return (score / 4.0f) * 100.0f;
-            return (float)Math.pow(4.0f - error, 2);
+            return Math.pow(4.0f - error, 2);
         }
 
 
