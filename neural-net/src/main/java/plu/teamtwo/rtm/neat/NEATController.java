@@ -164,9 +164,10 @@ public class NEATController {
         for(Species s : generation) {
             for(Genome g : s) {
                 //threadPool.submit(new GenomeProcessor(g, scoringFunction.createNew()));
-                GenomeProcessor p = new GenomeProcessor(g, scoringFunction.createNew());
+                GenomeProcessor p = new GenomeProcessor(g, scoringFunction);
                 p.run();
                 foundWinner = g.isWinner() | foundWinner;
+                scoringFunction = scoringFunction.createNew();
             }
         }
 
