@@ -3,11 +3,9 @@ from py4j.java_gateway import JavaGateway, CallbackServerParameters
 
 
 class CartPoleScore(object):
-    env = gym.make('CartPole-v0')
-
     def __init__(self):
         self.done = False
-        self.observation = self.env.reset()
+        self.observation = env.reset()
         self.score = 0.0
         self.steps = 0
 
@@ -22,8 +20,8 @@ class CartPoleScore(object):
 
     def generateInput(self):
         j_inputs = None
-        if not self.done and self.steps < 100:
-            self.env.render()
+        if not self.done:
+            env.render()
             j_inputs = gateway.new_array(gateway.jvm.float, 4)
             for x in range(0, 4):
                 j_inputs[x] = self.observation[x]
@@ -31,8 +29,8 @@ class CartPoleScore(object):
         return j_inputs
 
     def acceptOutput(self, output):
-        action = 1 if output[0] > 0.5 else 0
-        self.observation, reward, self.done, _ = self.env.step(action)
+        action = 0 if output[0] > output[1] else 1
+        self.observation, reward, self.done, _ = env.step(action)
         self.score += reward
         self.steps += 1
 
@@ -40,7 +38,7 @@ class CartPoleScore(object):
         return self.score
 
     def isWinner(self):
-        return self.score >= 200.0
+        return self.score >= 500.0
 
     class Java:
         implements = ['plu.teamtwo.rtm.neat.ScoringFunction']
@@ -49,9 +47,11 @@ class CartPoleScore(object):
 if __name__ == '__main__':
     gateway = JavaGateway(callback_server_parameters=CallbackServerParameters())
 
-    gateway.entry_point.init(gateway.jvm.plu.teamtwo.rtm.neat.Encoding.DIRECT_ENCODING, 4, 1)
+    gateway.entry_point.init(gateway.jvm.plu.teamtwo.rtm.neat.Encoding.DIRECT_ENCODING, 4, 2)
     controller = gateway.entry_point.getController()
     controller.createFirstGeneration()
+
+    env = gym.make('CartPole-v1')
 
     for _ in range(0, 500):
         found_winner = controller.assesGeneration(CartPoleScore())

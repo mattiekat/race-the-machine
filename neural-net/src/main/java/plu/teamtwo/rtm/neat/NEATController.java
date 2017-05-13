@@ -18,7 +18,7 @@ import static plu.teamtwo.rtm.core.util.Rand.*;
  */
 public class NEATController {
     /// Size of the total population.
-    private static final int POPULATION_SIZE = 150;
+    private static final int POPULATION_SIZE = 128;
     /// Number of generations a species can show no improvement before being removed.
     private static final int GENERATIONS_BEFORE_REMOVAL = 15;
     /// Minimum number of new members in the next generation of a species which has not been removed.
