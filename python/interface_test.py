@@ -28,3 +28,24 @@ if __name__ == '__main__':
     gateway.entry_point.duplicateAll()
     gateway.entry_point.notifyAllListeners("I am alive!")
     gateway.shutdown()
+
+
+# class Generator(object):
+#     def __init__(self):
+#         print("Initialized Generator")
+#
+#     def getVal(self):
+#         #return gateway.jvm.java.lang.Float(0.5)
+#         #return gateway.jvm.java.lang.Float(0.5).floatValue()
+#         #return numpy.float32(0.5)
+#         return 0.5
+#
+#     class Java:
+#         implements = ["plu.teamtwo.rtm.experiments.PythonInterfaceTest$RealGen"]
+#
+#
+# if __name__ == '__main__':
+#     gateway = JavaGateway(callback_server_parameters=CallbackServerParameters())
+#     gateway.entry_point.setGenerator(Generator())
+#     gateway.entry_point.printVal()
+#     gateway.shutdown()
