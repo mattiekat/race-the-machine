@@ -1,5 +1,6 @@
 package plu.teamtwo.rtm.ii;
 
+import plu.teamtwo.rtm.core.util.Point;
 import plu.teamtwo.rtm.core.util.Polygon;
 
 import java.awt.image.BufferedImage;
@@ -18,5 +19,12 @@ public class ProcessedData {
         this.capturedImage = capturedImage;
         this.processedImage = processedImage;
         this.polygons = polygons;
+    }
+
+    public boolean checkPoint(Point p) {
+        for(Polygon poly : polygons) {
+            if(poly.contains(p)) return true;
+        }
+        return false;
     }
 }
