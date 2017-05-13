@@ -18,7 +18,7 @@ import static plu.teamtwo.rtm.core.util.Rand.*;
  */
 public class NEATController {
     /// Size of the total population.
-    private static final int POPULATION_SIZE = 150;
+    private static final int POPULATION_SIZE = 64;
     /// Number of generations a species can show no improvement before being removed.
     private static final int GENERATIONS_BEFORE_REMOVAL = 15;
     /// Minimum number of new members in the next generation of a species which has not been removed.
@@ -164,9 +164,10 @@ public class NEATController {
         for(Species s : generation) {
             for(Genome g : s) {
                 //threadPool.submit(new GenomeProcessor(g, scoringFunction.createNew()));
-                GenomeProcessor p = new GenomeProcessor(g, scoringFunction.createNew());
+                GenomeProcessor p = new GenomeProcessor(g, scoringFunction);
                 p.run();
                 foundWinner = g.isWinner() | foundWinner;
+                scoringFunction = scoringFunction.createNew();
             }
         }
 
@@ -430,7 +431,7 @@ public class NEATController {
                 scoringFunction.acceptOutput(output);
             }
 
-            genome.setFitness(scoringFunction.getScore());
+            genome.setFitness((float)scoringFunction.getScore());
             if(scoringFunction.isWinner()) genome.setWinner();
         }
     }

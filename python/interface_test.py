@@ -1,0 +1,30 @@
+from py4j.java_gateway import JavaGateway, CallbackServerParameters
+
+
+class PyListener(object):
+    count = 0
+
+    def __init__(self):
+        self.x = PyListener.count
+        PyListener.count += 1
+        print("Initialized PyListener {}".format(self.x))
+
+    def notify(self, msg):
+        print(msg)
+        return '{}: "{}" was received by python.'.format(self.x, msg)
+
+    def duplicate(self):
+        return PyListener()
+
+    class Java:
+        implements = ["plu.teamtwo.rtm.experiments.PythonInterfaceTest$Listener"]
+
+
+if __name__ == '__main__':
+    gateway = JavaGateway(callback_server_parameters=CallbackServerParameters())
+    gateway.entry_point.registerListener(PyListener())
+    gateway.entry_point.notifyAllListeners("Hello World")
+    gateway.entry_point.registerListener(PyListener())
+    gateway.entry_point.duplicateAll()
+    gateway.entry_point.notifyAllListeners("I am alive!")
+    gateway.shutdown()

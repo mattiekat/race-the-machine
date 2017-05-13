@@ -60,7 +60,7 @@ public interface ScoringFunction {
      *
      * @return A score which can be used to asses the fitness of the specified individual.
      */
-    float getScore();
+    double getScore();
 
 
     /**
