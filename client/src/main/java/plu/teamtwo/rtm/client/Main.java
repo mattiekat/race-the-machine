@@ -13,6 +13,7 @@ public class Main {
     public static void main(String args[]) {
         ScreenCap sc = new ScreenCap(400, 100, 1280, 720);
         RTSProcessor rtsp = new RTSProcessor(sc);
+        InputController.init(sc.getScreen());
 
         MainWindow window = new MainWindow(rtsp);
         rtsp.start();
