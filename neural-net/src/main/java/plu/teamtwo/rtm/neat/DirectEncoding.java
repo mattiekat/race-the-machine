@@ -1,5 +1,6 @@
 package plu.teamtwo.rtm.neat;
 
+import plu.teamtwo.rtm.neural.CPPN;
 import plu.teamtwo.rtm.neural.NeuralNetwork;
 
 import java.security.InvalidParameterException;
@@ -542,7 +543,7 @@ class DirectEncoding implements Genome {
      * @return The ANN represented by the genome.
      */
     @Override
-    public NeuralNetwork getANN() {
+    public NeuralNetwork constructNeuralNetwork() {
         //TODO: use modified sigmoid function described in paper?
         //create lists of each type of node
         Map<Integer, Integer> nodes = new HashMap<>(nodeGenes.size()); //Map the node ID to the ANN Index
@@ -571,7 +572,7 @@ class DirectEncoding implements Genome {
                 nodes.put(n.id, count++);
 
         //construct a neural network now that we know the sizes
-        NeuralNetwork.Builder net = new NeuralNetwork.Builder()
+        CPPN.Builder net = new CPPN.Builder()
                 .inputs(inputs)
                 .outputs(outputs)
                 .hidden(hidden);

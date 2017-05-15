@@ -96,5 +96,5 @@ public interface Genome {
      *
      * @return The ANN represented by the genome.
      */
-    public abstract NeuralNetwork getANN();
+    public abstract NeuralNetwork constructNeuralNetwork();
 }

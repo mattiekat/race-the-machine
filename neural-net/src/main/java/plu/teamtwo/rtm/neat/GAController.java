@@ -421,7 +421,7 @@ public class GAController {
 
         @Override
         public void run() {
-            NeuralNetwork network = individual.genome.getANN();
+            NeuralNetwork network = individual.genome.constructNeuralNetwork();
             final boolean flushBetween = scoringFunction.flushBetween();
 
             float[] input;
