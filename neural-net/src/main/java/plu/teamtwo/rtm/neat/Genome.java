@@ -2,23 +2,22 @@ package plu.teamtwo.rtm.neat;
 
 import plu.teamtwo.rtm.neural.NeuralNetwork;
 
-public abstract class Genome {
-    /// Fitness score determined by the evaluation function.
-    private float fitness = 0;
-    /// This genome should be marked a winner iff it fulfills the requirements of the evaluation function.
-    private boolean winner = false;
-
-
+public interface Genome {
     /**
-     * Cross the genomes of two parents to create a child.
+     * Cross the genomes of two parents to create a child. This will take the disjoint and excess genes from the most
+     * fit parent and randomly choose between the matching ones.
      *
-     * @param cache Cached information about the genome.
-     * @param p1    First parent, the most fit of the two.
-     * @param p2    Second parent, the less fit of the two.
+     * @param cache   Cached information about the genome.
+     * @param p1      First parent, the most fit of the two.
+     * @param p1f     First parent fitness.
+     * @param p2      Second parent.
+     * @param p2f     Second parent fitness.
+     * @param average True if matching values should be averaged instead of randomly chosen.
      * @return A child which is the result of crossing the genomes
      */
-    static Genome crossMultipoint(GenomeCache cache, Genome p1, Genome p2) {
-        return p1.crossMultipoint(cache, p2);
+    static Genome crossMultipoint(GenomeCache cache, Genome p1, final float p1f, Genome p2,
+                                  final float p2f, final boolean average) {
+        return p1.crossMultipoint(cache, p1f, p2, p2f, average);
     }
 
 
@@ -31,44 +30,6 @@ public abstract class Genome {
      */
     static float compatibilityDistance(Genome a, Genome b) {
         return a.compatibilityDistance(b);
-    }
-
-
-    /**
-     * Get the fitness value for this individual.
-     *
-     * @return This individual's fitness value or 0 if unset.
-     */
-    public float getFitness() {
-        return fitness;
-    }
-
-
-    /**
-     * Set the fitness value for this individual.
-     *
-     * @param fitness A measure of how well this individual performed.
-     */
-    void setFitness(float fitness) {
-        this.fitness = fitness;
-    }
-
-
-    /**
-     * Set a flag representing that this genome has completely fulfilled the task defined by the evaluation function.
-     */
-    public void setWinner() {
-        winner = true;
-    }
-
-
-    /**
-     * Find out whether this genome has completely fulfilled the task defined by the evaluation function.
-     *
-     * @return True if this genome is an accepted solution to the evaluation function.
-     */
-    public boolean isWinner() {
-        return winner;
     }
 
 
@@ -110,22 +71,15 @@ public abstract class Genome {
      * Cross the genomes of two parents to create a child. This will take the disjoint and excess genes from the most
      * fit parent and randomly choose between the matching ones.
      *
-     * @param cache Cached information about the genome.
-     * @param other The other parent.
+     * @param cache   Cached information about the genome.
+     * @param p1f     First parent fitness.
+     * @param p2      Second parent.
+     * @param p2f     Second parent fitness.
+     * @param average True if matching values should be averaged instead of randomly chosen.
      * @return A child which is the result of crossing the genomes
      */
-    abstract Genome crossMultipoint(GenomeCache cache, Genome other);
-
-
-    /**
-     * Cross the genomes of two parents to create a child. This will take the disjoint and excess genes from the most
-     * fit parent and average the values of the matching ones.
-     *
-     * @param cache Cached information about the genome.
-     * @param other The other parent.
-     * @return A child which is the result of crossing the genomes
-     */
-    abstract Genome crossMultipointAvg(GenomeCache cache, Genome other);
+    public DirectEncoding crossMultipoint(GenomeCache cache, final float p1f, Genome p2,
+                                          final float p2f, final boolean average);
 
 
     /**
