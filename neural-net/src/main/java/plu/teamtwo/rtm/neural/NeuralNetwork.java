@@ -30,7 +30,6 @@ public class NeuralNetwork {
     /// The end of the output nodes in the ANN (i.e. output nodes are [endInput, endOutput) ).
     private final int endOutput;
 
-
     private NeuralNetwork(Builder builder) {
         if(builder.in < 1 || builder.out < 1 || builder.hidden < 0)
             throw new InvalidParameterException("Invalid number of nodes to form an ANN.");

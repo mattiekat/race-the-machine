@@ -1,23 +1,25 @@
 package plu.teamtwo.rtm.neural;
 
+import plu.teamtwo.rtm.core.util.Rand;
+
 import java.util.function.Function;
 
 /**
  * This defines a function used for activation on a Neuron. Each value has with it associated a function which is able
  * to calculate the value when called.
- *
+ * <p>
  * Take a look at https://en.wikipedia.org/wiki/Activation_function for more information.
  */
 public enum ActivationFunction {
-    ABS(        (Float x) -> x >= 0 ? x : -x                                ),
-    GAUSSIAN(   (Float x) -> (float)Math.exp( -(x * x) )                    ),
-    LINEAR(     (Float x) -> x                                              ),
-    SIGMOID(    (Float x) -> (1.0f / (1.0f + (float)Math.exp(-4.9 * x)))    ), //TODO: keep modified sigmoid function?
-    SINC(       (Float x) -> (float)Math.sin(x) / x                         ),
-    SINUSOID(   (Float x) -> (float)Math.sin(x)                             ),
-    SOFTPLUS(   (Float x) -> (float)Math.log1p(Math.exp(x))                 ),
-    SYMETRIC(   (Float x) -> (x >= 0 ? -x : x) + 1.0f                       ),
-    TANH(       (Float x) -> (float)Math.tanh(x)                            );
+    ABS((Float x) -> x >= 0 ? x : -x),
+    GAUSSIAN((Float x) -> (float) Math.exp(-(x * x))),
+    LINEAR((Float x) -> x),
+    SIGMOID((Float x) -> (1.0f / (1.0f + (float) Math.exp(-4.9 * x)))), //TODO: keep modified sigmoid function?
+    SINC((Float x) -> (float) Math.sin(x) / x),
+    SINUSOID((Float x) -> (float) Math.sin(x)),
+    SOFTPLUS((Float x) -> (float) Math.log1p(Math.exp(x))),
+    SYMETRIC((Float x) -> (x >= 0 ? -x : x) + 1.0f),
+    TANH((Float x) -> (float) Math.tanh(x));
 
 
     private final Function<Float, Float> function;
@@ -25,6 +27,7 @@ public enum ActivationFunction {
 
     /**
      * Constructor which sets the function of this specific type.
+     *
      * @param fn The function to use for activation.
      */
     ActivationFunction(Function<Float, Float> fn) {
@@ -33,7 +36,20 @@ public enum ActivationFunction {
 
 
     /**
+     * Select a random activation function.
+     *
+     * @return A random activation function.
+     */
+    public static ActivationFunction randomActivationFunction() {
+        ActivationFunction[] fns = ActivationFunction.class.getEnumConstants();
+        int x = Rand.getRandomNum(0, fns.length - 1);
+        return fns[x];
+    }
+
+
+    /**
      * Calcualate the activation function given x.
+     *
      * @param x The input.
      * @return activation(x)
      */
