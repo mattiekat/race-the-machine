@@ -3,6 +3,15 @@ package plu.teamtwo.rtm.neural;
 import plu.teamtwo.rtm.core.util.Pair;
 
 public class NeuralNetworkComposition extends Pair<NeuralNetwork, NeuralNetwork> implements NeuralNetwork {
+    private NeuralNetworkComposition() {
+        super();
+    }
+
+
+    public NeuralNetworkComposition(NeuralNetwork a, NeuralNetwork b) {
+        super(a, b);
+    }
+
 
     /**
      * Calculate the outputs of the neural network given the inputs. Note individual implementations are responsible for

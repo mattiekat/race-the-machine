@@ -78,8 +78,7 @@ public interface Genome {
      * @param average True if matching values should be averaged instead of randomly chosen.
      * @return A child which is the result of crossing the genomes
      */
-    public DirectEncoding crossMultipoint(GenomeCache cache, final float p1f, Genome p2,
-                                          final float p2f, final boolean average);
+    public Genome crossMultipoint(GenomeCache cache, final float p1f, Genome p2, final float p2f, final boolean average);
 
 
     /**

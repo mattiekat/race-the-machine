@@ -1,5 +1,7 @@
 package plu.teamtwo.rtm.neat;
 
+import plu.teamtwo.rtm.core.util.Pair;
+
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Map;
@@ -7,11 +9,34 @@ import java.util.Map;
 /**
  * Used to track mutations within a generation to properly give the same identification.
  */
-abstract class GenomeCache {
+interface GenomeCache {
     /**
      * Called when a new generation is created, will setup cache for continued use.
      */
-    abstract void newGeneration();
+    void newGeneration();
+}
+
+
+
+class CacheComposition extends Pair<GenomeCache, GenomeCache> implements GenomeCache {
+    CacheComposition() {
+        super();
+    }
+
+
+    CacheComposition(GenomeCache a, GenomeCache b) {
+        super(a, b);
+    }
+
+
+    /**
+     * Called when a new generation is created, will setup cache for continued use.
+     */
+    @Override
+    public void newGeneration() {
+        a.newGeneration();
+        b.newGeneration();
+    }
 }
 
 
@@ -19,7 +44,7 @@ abstract class GenomeCache {
 /**
  * Used to track mutations within a generation to properly give the same node ids and edge ids.
  */
-class DirectEncodingCache extends GenomeCache {
+class DirectEncodingCache implements GenomeCache {
     private Map<Integer, int[]> mutatedNodes = new HashMap<>();
     private Map<Long, Integer> mutatedEdges = new HashMap<>();
 
@@ -64,10 +89,11 @@ class DirectEncodingCache extends GenomeCache {
 
     /**
      * Add information about a newly mutated node.
-     * @param nodeID The ID of the new node.
-     * @param edgeToID ID of the edge going to the new node.
+     *
+     * @param nodeID     The ID of the new node.
+     * @param edgeToID   ID of the edge going to the new node.
      * @param edgeFromID ID of the edge coming from the new node.
-     * @param edge ID of the edge along which the node was added.
+     * @param edge       ID of the edge along which the node was added.
      */
     void addMutatedNode(int nodeID, int edgeToID, int edgeFromID, int edge) {
         mutatedNodes.put(edge, new int[]{nodeID, edgeToID, edgeFromID});
@@ -76,9 +102,10 @@ class DirectEncodingCache extends GenomeCache {
 
     /**
      * Add information about a newly mutated edge.
-     * @param id ID of the new edge.
+     *
+     * @param id   ID of the new edge.
      * @param from ID of the node which the edge comes from.
-     * @param to ID of the node which the edge goes to.
+     * @param to   ID of the node which the edge goes to.
      */
     void addMutatedEdge(int id, int from, int to) {
         mutatedEdges.put(hashTwoInts(from, to), id);
@@ -87,6 +114,7 @@ class DirectEncodingCache extends GenomeCache {
 
     /**
      * Convert the (a, b) data to a unique id.
+     *
      * @param a First value to be hashed.
      * @param b Second value to be hashed.
      * @return Unique, deterministic value defined by the two values.
@@ -104,7 +132,7 @@ class DirectEncodingCache extends GenomeCache {
      * the list of mutated edges and node, but maintain information about the new ID Values.
      */
     @Override
-    void newGeneration() {
+    public void newGeneration() {
         mutatedEdges.clear();
         mutatedNodes.clear();
     }
