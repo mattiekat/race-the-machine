@@ -1,11 +1,14 @@
 package plu.teamtwo.rtm.client.gui;
 
+import plu.teamtwo.rtm.client.InputController;
 import plu.teamtwo.rtm.ii.RTSProcessor;
 
 import plu.teamtwo.rtm.core.util.Point;
 import plu.teamtwo.rtm.core.util.Polygon;
 import plu.teamtwo.rtm.ii.ScreenCap;
 
+import java.awt.event.ActionEvent;
+import java.awt.event.ActionListener;
 import java.util.List;
 import javax.swing.*;
 import java.awt.*;
@@ -13,7 +16,7 @@ import java.awt.event.MouseEvent;
 import java.awt.event.MouseListener;
 import java.awt.image.BufferedImage;
 
-public class ImagePanel extends JPanel implements MouseListener {
+public class ImagePanel extends JPanel implements MouseListener, ActionListener {
 
     protected final RTSProcessor rtsp;
     protected BufferedImage img = null;
@@ -23,11 +26,23 @@ public class ImagePanel extends JPanel implements MouseListener {
 
     private Point firstClick = null;
 
+    private final JPopupMenu contextMenu;
+    private Point contextPosition = null;
+    private final JMenuItem setStartClickMenuItem;
+
+    private Point startButtonPosition = new Point();
+
     public ImagePanel(RTSProcessor rtsp) {
         this.rtsp = rtsp;
         DisplayMode dm = this.rtsp.getScreen().getDisplayMode();
         fullSize = new Dimension(dm.getWidth(), dm.getHeight());
         this.addMouseListener(this);
+
+        // Create the context menu
+        contextMenu = new JPopupMenu();
+        setStartClickMenuItem = new JMenuItem("Set Start Button Position");
+        setStartClickMenuItem.addActionListener(this);
+        contextMenu.add(setStartClickMenuItem);
     }
 
     public void setContents(BufferedImage img, List<Polygon> polygons) {
@@ -86,6 +101,9 @@ public class ImagePanel extends JPanel implements MouseListener {
             }
         }
 
+        g.setColor(Color.CYAN);
+        g.fillOval(startButtonPosition.x.intValue()-10, startButtonPosition.y.intValue()-10, 20, 20);
+
         g.setFont(FPS_FONT);
         String fpsStr = ""+rtsp.getFPS() + ":" + (polygons == null ? -1 : polygons.size());
         g.setColor(Color.BLACK);
@@ -109,12 +127,20 @@ public class ImagePanel extends JPanel implements MouseListener {
 
 
 
+    @Override
     public void mousePressed(MouseEvent e) {
-        if(e.getClickCount() == 2) {
+
+        if( SwingUtilities.isRightMouseButton(e) ) {
+            contextPosition = new Point(e.getX(), e.getY());
+            contextMenu.show( e.getComponent(), e.getX(), e.getY() );
+        }
+
+        else if(e.getClickCount() == 2) {
             firstClick = new Point(e.getX(), e.getY());
         }
     }
 
+    @Override
     public void mouseReleased(MouseEvent e) {
         if(firstClick != null) {
             Point secondClick = new Point(e.getX(), e.getY());
@@ -131,7 +157,19 @@ public class ImagePanel extends JPanel implements MouseListener {
         }
     }
 
-    public void mouseClicked(MouseEvent e) { /* NOOP */ }
-    public void mouseEntered(MouseEvent e) { /* NOOP */ }
-    public void mouseExited(MouseEvent e) { /* NOOP */ }
+    @Override public void mouseClicked(MouseEvent e) { /* NOOP */ }
+    @Override public void mouseEntered(MouseEvent e) { /* NOOP */ }
+    @Override public void mouseExited(MouseEvent e) { /* NOOP */ }
+
+
+    @Override
+    public void actionPerformed(ActionEvent e) {
+
+        if(e.getSource() == setStartClickMenuItem && contextPosition != null) {
+            startButtonPosition = new Point(contextPosition);
+            double xMod = fullSize.getWidth() / this.getWidth();
+            double yMod = fullSize.getHeight() / this.getHeight();
+            InputController.getInstance().setStartButtonPosition(new Point((int)(startButtonPosition.x.doubleValue()*xMod), (int)(startButtonPosition.y.doubleValue()*yMod)));
+        }
+    }
 }
