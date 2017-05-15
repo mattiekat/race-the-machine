@@ -84,20 +84,16 @@ public class CPPN implements NeuralNetwork {
     public float[] calculate(float... inputs) {
         float[] output = run(inputs, false), last = null;
 
-        //run until we hit max cycles or the value has stabilized
+        Outer: //run until we hit max cycles or the value has stabilized
         for(int cycle = 0; cycle < MAX_RECURRENT_CYCLES; ++cycle) {
             last = output;
             output = run(inputs, false);
 
             //check if any exceed max difference and end the loop if so
-            boolean within = true;
-            for(int i = 0; i < output.length; ++i) {
-                if(Math.abs(last[i] - output[i]) > MAX_DIFFERENCE_BETWEEN_OUTPUTS) {
-                    within = false;
-                    break;
-                }
-            }
-            if(within) break;
+            for(int i = 0; i < output.length; ++i)
+                if(Math.abs(last[i] - output[i]) > MAX_DIFFERENCE_BETWEEN_OUTPUTS)
+                    continue Outer;
+            break; //none of them were different
         }
         return output;
     }
