@@ -1,6 +1,10 @@
 package plu.teamtwo.rtm.client;
 
+import plu.teamtwo.rtm.core.util.*;
+import plu.teamtwo.rtm.core.util.Point;
+
 import java.awt.*;
+import java.awt.event.InputEvent;
 import java.awt.event.KeyEvent;
 
 public class InputController {
@@ -26,6 +30,10 @@ public class InputController {
     protected final boolean[] pressedKeys = new boolean[Key.values().length];
     protected final Robot robot;
 
+    protected boolean gameRunning = false;
+
+    protected Point startButtonPosition;
+
     private InputController(GraphicsDevice screen) {
         try {
             robot = new Robot(screen);
@@ -45,6 +53,21 @@ public class InputController {
             else
                 robot.keyRelease(key.keycode);
         }
+    }
+
+    public void setStartButtonPosition(Point position) {
+        this.startButtonPosition = position;
+    }
+
+    public void startGame() {
+        robot.mouseMove(startButtonPosition.x.intValue(), startButtonPosition.y.intValue());
+        robot.mousePress(InputEvent.BUTTON1_DOWN_MASK);
+        robot.mouseRelease(InputEvent.BUTTON1_DOWN_MASK);
+        gameRunning = true;
+    }
+
+    public boolean isGameRunning() {
+        return gameRunning;
     }
 
 
