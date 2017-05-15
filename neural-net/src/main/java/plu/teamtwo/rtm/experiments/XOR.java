@@ -19,7 +19,7 @@ public class XOR implements Runnable {
     @Override
     public void run() {
         PrintStream output = new PrintStream(new FileOutputStream(FileDescriptor.out));
-        NEATController controller = new NEATController(
+        GAController controller = new GAController(
                 Encoding.DIRECT_ENCODING,
                 3, 1
         );

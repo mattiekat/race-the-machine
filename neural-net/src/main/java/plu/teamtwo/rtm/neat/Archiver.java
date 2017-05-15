@@ -3,19 +3,19 @@ package plu.teamtwo.rtm.neat;
 import java.io.*;
 import java.security.InvalidParameterException;
 
-import static plu.teamtwo.rtm.neat.NEATController.readFromStream;
-import static plu.teamtwo.rtm.neat.NEATController.writeToStream;
+import static plu.teamtwo.rtm.neat.GAController.readFromStream;
+import static plu.teamtwo.rtm.neat.GAController.writeToStream;
 
 public class Archiver {
     /**
-     * Save a NEATController to a JSON archive. This should be used before creating the next generation to prevent a
+     * Save a GAController to a JSON archive. This should be used before creating the next generation to prevent a
      * loss of information as the generation is overwritten.
      *
      * @param controller Controller to save to a file.
      * @param path       Location to save the data to.
      * @return True if it was successfully saved, false otherwise.
      */
-    public static boolean saveToFile(NEATController controller, String path) {
+    public static boolean saveToFile(GAController controller, String path) {
         if(controller == null || path == null) return false;
         File dir = new File(path);
         if(!dir.exists() || !dir.isDirectory()) {
@@ -34,15 +34,15 @@ public class Archiver {
 
 
     /**
-     * Read a NEATController from a JSON file. This will create a new NEATController with the information of the
+     * Read a GAController from a JSON file. This will create a new GAController with the information of the
      * most recent generation in the JSON file. This expects to receive a directory with the generations saved into it.
      * <p>
      * Note: auto save will need to be re-enabled if it is desired in the new instance.
      *
      * @param path Directory to read from.
-     * @return A NEATController initialized to the latest generation in the JSON archive.
+     * @return A GAController initialized to the latest generation in the JSON archive.
      */
-    public static NEATController readFromFile(String path) throws IOException {
+    public static GAController readFromFile(String path) throws IOException {
         //verify we were given a directory.
         if(path == null) return null;
         File file = new File(path);

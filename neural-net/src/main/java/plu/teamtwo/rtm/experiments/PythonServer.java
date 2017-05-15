@@ -1,21 +1,21 @@
 package plu.teamtwo.rtm.experiments;
 
 import plu.teamtwo.rtm.neat.Encoding;
-import plu.teamtwo.rtm.neat.NEATController;
+import plu.teamtwo.rtm.neat.GAController;
 import py4j.GatewayServer;
 
 public class PythonServer {
-    NEATController controller;
+    GAController controller;
 
     public PythonServer() {
         controller = null;
     }
 
     public void init(Encoding encoding, int inputs, int outputs) {
-        controller = new NEATController(encoding, inputs, outputs);
+        controller = new GAController(encoding, inputs, outputs);
     }
 
-    public NEATController getController() {
+    public GAController getController() {
         return controller;
     }
 

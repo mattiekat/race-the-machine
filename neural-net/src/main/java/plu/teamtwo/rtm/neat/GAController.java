@@ -12,11 +12,11 @@ import java.util.*;
 import static plu.teamtwo.rtm.core.util.Rand.*;
 
 /**
- * The over-arching controller for the NEAT algorithm. Note that this is not designed to be called from multiple
+ * The over-arching controller for the GA algorithms. Note that this is not designed to be called from multiple
  * threads and may break up tasks internally.
- * TODO: create a population class and keep only high-level logic in NEATController
+ * TODO: create a population class and keep only high-level logic in GAController
  */
-public class NEATController {
+public class GAController {
     /// Size of the total population.
     private static final int POPULATION_SIZE = 64;
     /// Number of generations a species can show no improvement before being removed.
@@ -51,7 +51,7 @@ public class NEATController {
 
 
     //TODO: take parameter settings
-    public NEATController(Encoding encoding, int inputs, int outputs) {
+    public GAController(Encoding encoding, int inputs, int outputs) {
         if(inputs <= 0 || outputs <= 0)
             throw new InvalidParameterException("The number of inputs and outputs must be greater than 0.");
 
@@ -67,40 +67,40 @@ public class NEATController {
 
 
     /**
-     * Read a NEATController from a JSON stream. This will create a new NEATController with the information of the
+     * Read a GAController from a JSON stream. This will create a new GAController with the information of the
      * most recent generation in the JSON stream.
      *
-     * @param inputStream A stream of JSON representing a NEATController.
-     * @return A NEATController initialized to the latest generation in the JSON archive.
+     * @param inputStream A stream of JSON representing a GAController.
+     * @return A GAController initialized to the latest generation in the JSON archive.
      */
-    public static NEATController readFromStream(InputStream inputStream) throws IOException {
+    public static GAController readFromStream(InputStream inputStream) throws IOException {
         JsonReader reader = new JsonReader(new InputStreamReader(inputStream, "UTF-8"));
         Gson gson = new Gson();
-        NEATController controller = gson.fromJson(reader, NEATController.class);
+        GAController controller = gson.fromJson(reader, GAController.class);
         reader.close();
         return controller;
     }
 
 
     /**
-     * Write a NEATController to an output stream. This will save all the information about the current generation and
+     * Write a GAController to an output stream. This will save all the information about the current generation and
      * other information about the current controller state.
      *
      * @param outputStream A stream to output the JSON to.
      */
-    public static void writeToStream(NEATController controller, OutputStream outputStream) throws IOException {
+    public static void writeToStream(GAController controller, OutputStream outputStream) throws IOException {
         controller.sortByFitness();
 
         Gson gson = new Gson();
         JsonWriter writer = new JsonWriter(new OutputStreamWriter(outputStream, "UTF-8"));
         writer.setIndent("  ");
-        gson.toJson(controller, NEATController.class, writer);
+        gson.toJson(controller, GAController.class, writer);
         writer.close();
     }
 
 
     /**
-     * Setup autosave (or disable it). If enabled, the NEATController will save its current state to a file before
+     * Setup autosave (or disable it). If enabled, the GAController will save its current state to a file before
      * creating the next generation (preserving historical information). If this throws an exception, auto-saves will
      * be disabled until it is called again without errors.
      *
