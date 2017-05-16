@@ -14,7 +14,7 @@ public enum ActivationFunction {
     ABS((Float x) -> x >= 0 ? x : -x),
     GAUSSIAN((Float x) -> (float) Math.exp(-(x * x))),
     LINEAR((Float x) -> x),
-    SIGMOID((Float x) -> (1.0f / (1.0f + (float) Math.exp(x)))),
+    SIGMOID((Float x) -> (1.0f / (1.0f + (float) Math.exp(-x)))),
     SINC((Float x) -> x == 0.0f ? 1.0f : (float) Math.sin(x) / x),
     SINUSOID((Float x) -> (float) Math.sin(x)),
     SOFTPLUS((Float x) -> (float) Math.log1p(Math.exp(x))),
