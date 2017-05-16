@@ -71,7 +71,6 @@ if __name__ == '__main__':
         if found_winner:
             gson = gateway.jvm.com.google.gson.GsonBuilder().setPrettyPrinting().create()
             print(gson.toJson(best))
-            break
 
         controller.nextGeneration()
 
