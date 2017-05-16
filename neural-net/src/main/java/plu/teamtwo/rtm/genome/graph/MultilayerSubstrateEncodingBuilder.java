@@ -3,14 +3,21 @@ package plu.teamtwo.rtm.genome.graph;
 import plu.teamtwo.rtm.genome.Genome;
 import plu.teamtwo.rtm.genome.GenomeBuilder;
 import plu.teamtwo.rtm.genome.GenomeCache;
+import plu.teamtwo.rtm.neural.ActivationFunction;
 
-import java.security.InvalidParameterException;
 import java.util.LinkedList;
 
 public class MultilayerSubstrateEncodingBuilder implements GenomeBuilder {
-    int[] inputs;
-    int[] outputs;
-    LinkedList< int[] > hidden;
+    private int[] inputs;
+    private int[] outputs;
+    private LinkedList< int[] > hidden;
+
+    /// Activation function used to process inputs with before calculating.
+    ActivationFunction inputFunction = ActivationFunction.LINEAR;
+    /// Activation function to use for output nodes.
+    ActivationFunction outputFunction = ActivationFunction.SIGMOID;
+    /// Activation function to use for hidden nodes on the substrate.
+    ActivationFunction hiddenFunction = ActivationFunction.SIGMOID;
 
 
     /**
@@ -71,6 +78,41 @@ public class MultilayerSubstrateEncodingBuilder implements GenomeBuilder {
         return this;
     }
 
+    /**
+     * Set the activation function to use on inputs before processing the data.
+     *
+     * @param fn The function to use for inputs to the network.
+     */
+    public MultilayerSubstrateEncodingBuilder inputFunction(ActivationFunction fn) {
+        this.inputFunction = fn;
+        return this;
+    }
+
+
+    /**
+     * Sets the activation function for outputs from the network. This will, in effect, set the range of possible
+     * outputs from the network as well since not all output functions have the same range.
+     *
+     * @param fn The function to use for outputs form the network.
+     */
+    public MultilayerSubstrateEncodingBuilder outputFunction(ActivationFunction fn) {
+        this.outputFunction = fn;
+        return this;
+    }
+
+
+    /**
+     * Set the hidden function to use. This setting is not used if we allow
+     * for random activations.
+     *
+     * @param fn The function to use for hidden nodes within the network if we do not allow for random activation
+     *           functions.
+     */
+    public MultilayerSubstrateEncodingBuilder hiddenFunction(ActivationFunction fn) {
+        this.hiddenFunction = fn;
+        return this;
+    }
+
 
     /**
      * Used to construct the double array of layer information and validate it.
@@ -79,8 +121,10 @@ public class MultilayerSubstrateEncodingBuilder implements GenomeBuilder {
      */
     int[][] buildLayers() {
         int[][] layers = new int[2 + hidden.size()][];
+        layers[0] = inputs;
         for(int i = 0; i < hidden.size(); ++i)
-            layers[i] = hidden.get(i);
+            layers[i + 1] = hidden.get(i);
+        layers[layers.length - 1] = outputs;
 
         return layers;
     }

@@ -5,7 +5,7 @@ import plu.teamtwo.rtm.core.util.Pair;
 import java.util.HashMap;
 import java.util.Map;
 
-public class CPPNBuilder {
+public class CPPNBuilder implements NeuralNetworkBuilder {
     private static final int DEFAULT_MAX_RECURRENT_CYCLES = 20;
     private static final float DEFAULT_MAX_DIFFERENCE_BETWEEN_OUTPUTS = 1e-4f;
 
@@ -114,6 +114,7 @@ public class CPPNBuilder {
      *
      * @return The new neural network.
      */
+    @Override
     public CPPN create() {
         return new CPPN(this);
     }

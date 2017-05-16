@@ -8,20 +8,18 @@ public class SubstrateNetworkTest {
 
     @Test
     public void testEmptyCalculate() {
-        NeuralNetwork net = new SubstrateNetwork(
-            new int[][]{{2, 2}, {2, 2}, {1}},
-            new float[][]{
-                {
+        NeuralNetwork net = new SubstrateNetworkBuilder()
+            .layers(new int[][]{{2, 2}, {2, 2}, {1}})
+            .weights(
+                new float[][]{{
                     0.0f,  0.0f,  0.0f,  0.0f,
                     0.0f,  0.0f,  0.0f,  0.0f,
                     0.0f,  0.0f,  0.0f,  0.0f,
                     0.0f,  0.0f,  0.0f,  0.0f
-                },
-                {
+                },{
                     0.0f,  0.0f,  0.0f,  0.0f
-                }
-            }
-        );
+                }}
+            ).create();
 
         float[] output = net.calculate(1.0f, 2.0f, -4.0f, -2.0f);
         assertEquals(1, output.length);
@@ -30,20 +28,21 @@ public class SubstrateNetworkTest {
 
     @Test
     public void testSimpleCalculate() {
-        NeuralNetwork net = new SubstrateNetwork(
-                new int[][]{{2, 2}, {2, 2}, {1}},
-                new float[][]{
-                        {
-                                0.0f,  0.0f,  0.0f,  0.0f,
-                                0.0f,  0.0f,  0.0f,  0.0f,
-                                0.0f,  1.0f,  0.0f,  0.0f,
-                                0.0f,  0.0f,  0.0f,  0.0f
-                        },
-                        {
-                                0.0f,  0.0f, 10.0f,  0.0f
-                        }
-                }
-        );
+        NeuralNetwork net = new SubstrateNetworkBuilder()
+            .layers(new int[][]{{2, 2}, {2, 2}, {1}})
+            .weights(
+                new float[][]{{
+                    0.0f,  0.0f,  0.0f,  0.0f,
+                    0.0f,  0.0f,  0.0f,  0.0f,
+                    0.0f,  1.0f,  0.0f,  0.0f,
+                    0.0f,  0.0f,  0.0f,  0.0f
+                },{
+                    0.0f,  0.0f, 10.0f,  0.0f
+                }}
+            ).inputFunction(ActivationFunction.LINEAR)
+            .hiddenFunction(ActivationFunction.SIGMOID)
+            .outputFunction(ActivationFunction.TANH)
+            .create();
 
         float[] output = net.calculate(1.0f, 1.0f, 1.0f, 1.0f);
         assertEquals(1, output.length);

@@ -2,6 +2,7 @@ package plu.teamtwo.rtm.genome.graph;
 
 import plu.teamtwo.rtm.genome.Genome;
 import plu.teamtwo.rtm.genome.GenomeCache;
+import plu.teamtwo.rtm.neural.ActivationFunction;
 import plu.teamtwo.rtm.neural.NeuralNetwork;
 import plu.teamtwo.rtm.neural.SubstrateNetwork;
 
@@ -15,6 +16,13 @@ public class MultilayerSubstrateEncoding implements Genome {
     private int[] layerSizes;
     private GraphEncoding cppn;
 
+    /// Activation function used to process inputs with before calculating.
+    private final ActivationFunction inputFunction;
+    /// Activation function to use for output nodes.
+    private final ActivationFunction outputFunction;
+    /// Activation function to use for hidden nodes on the substrate.
+    private final ActivationFunction hiddenFunction;
+
 
     /**
      * Construct a new MultilayerSubstrateEncoding using a builder and a cache. This will construct the necessary CPPN
@@ -26,6 +34,9 @@ public class MultilayerSubstrateEncoding implements Genome {
     MultilayerSubstrateEncoding(MultilayerSubstrateEncodingBuilder builder, GenomeCache cache) {
         layers = builder.buildLayers();
         layerSizes = SubstrateNetwork.calculateLayerSizes(layers);
+        inputFunction = builder.inputFunction;
+        outputFunction = builder.outputFunction;
+        hiddenFunction = builder.hiddenFunction;
 
         //construct the CPPN with outputs for each layer transition and enough inputs to support the largest
         // transition's dimensional space

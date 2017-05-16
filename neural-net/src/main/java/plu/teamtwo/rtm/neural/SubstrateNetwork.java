@@ -1,6 +1,7 @@
 package plu.teamtwo.rtm.neural;
 
 import java.security.InvalidParameterException;
+import java.util.Arrays;
 
 /**
  * Represents a substrate network which has only a few outputs at definable coordinates.
@@ -17,18 +18,24 @@ public class SubstrateNetwork implements NeuralNetwork {
     /// Product of each layer's dimensions
     private final transient int[] layerSizes;
 
+    /// Activation function used to process inputs with before calculating.
+    private final ActivationFunction inputFunction;
+    /// Activation function to use for output nodes.
+    private final ActivationFunction outputFunction;
+    /// Activation function to use for hidden nodes on the substrate.
+    private final ActivationFunction hiddenFunction;
+
 
     /**
-     * Construct a substrate network with n layers each capable of having their own number of dimensions.
-     *
-     * @param layers  Top level array is of layers, deeper level array is of the dimensions for the layer.
-     * @param weights Top level array defines the layers being connected, lower level array defines the weight for each
-     *                input coordinate to output coordinate connection in the form (output, input). For example,
-     *                (x2, y2, x1, y1).
+     * Create a new substrate network with the information provided by a builder.
      */
-    public SubstrateNetwork(int[][] layers, float[][] weights) {
-        this.layers = layers;
-        this.weights = weights;
+    SubstrateNetwork(SubstrateNetworkBuilder builder) {
+        layers = builder.layers;
+        weights = builder.weights;
+
+        inputFunction  = builder.inputFunction;
+        outputFunction = builder.outputFunction;
+        hiddenFunction = builder.hiddenFunction;
 
         if(layers.length < 2)
             throw new InvalidParameterException("Must at minimum have an input and output layer.");
@@ -86,6 +93,11 @@ public class SubstrateNetwork implements NeuralNetwork {
         if(inputs.length != layerSizes[0])
             throw new InvalidParameterException("Invalid number of inputs.");
 
+//        if(inputFunction != ActivationFunction.LINEAR)
+//            //would do same thing without if statement, except it would take longer
+//            for(int i = 0; i < inputs.length; ++i)
+//                inputs[i] = inputFunction.calculate(inputs[i]);
+
         float[] last = inputs;
         float[] outputs = null;
 
@@ -104,7 +116,9 @@ public class SubstrateNetwork implements NeuralNetwork {
                 for(int i = 0; i < layerSizes[layer]; ++i)
                     sum += last[i] * weights[layer][weightOffset + i];
 
-                outputs[j] = ActivationFunction.SIGMOID.calculate(sum);
+                outputs[j] = (layer == layers.length - 2) ?
+                                     outputFunction.calculate(sum) :
+                                     hiddenFunction.calculate(sum);
             }
 
             last = outputs;

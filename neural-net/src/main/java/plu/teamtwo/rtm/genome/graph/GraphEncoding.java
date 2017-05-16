@@ -47,7 +47,7 @@ public class GraphEncoding implements Genome {
     private NavigableMap<Integer, Edge> edgeGenes = new TreeMap<>();
     private final boolean randomActivations;
 
-    //TODO: create settings object
+    //TODO: create settings object?
     /// Default activation function to use for input nodes if a random one cannot be selected.
     private final ActivationFunction inputFunction;
     /// Activation function to use for output nodes. (Output node will not mutate their activation function)
