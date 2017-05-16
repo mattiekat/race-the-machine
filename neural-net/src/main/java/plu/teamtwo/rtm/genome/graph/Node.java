@@ -1,21 +1,22 @@
 package plu.teamtwo.rtm.genome.graph;
 
+import plu.teamtwo.rtm.neural.ActivationFunction;
+
 class Node implements Comparable<Node> {
-    private static int nextNodeID = 0;
-    /// The historically-based ID of this Node
     final int id;
     final NodeType nodeType;
+    ActivationFunction fn;
 
 
     Node(Node other) {
-        this(other.id, other.nodeType);
+        this(other.id, other.nodeType, other.fn);
     }
 
 
-    Node(int id, NodeType nodeType) {
-        nextNodeID = Math.max(id + 1, nextNodeID);
+    Node(int id, NodeType nodeType, ActivationFunction fn) {
         this.id = id;
         this.nodeType = nodeType;
+        this.fn = fn;
     }
 
 

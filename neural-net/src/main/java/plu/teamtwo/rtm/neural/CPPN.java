@@ -6,9 +6,7 @@ import java.security.InvalidParameterException;
 import java.util.*;
 
 public class CPPN implements NeuralNetwork {
-    private static final ActivationFunction DEFAULT_ACTIVATION_FUNCTION = ActivationFunction.SIGMOID;
-    private static final int DEFAULT_MAX_RECURRENT_CYCLES = 20;
-    private static final float DEFAULT_MAX_DIFFERENCE_BETWEEN_OUTPUTS = 1e-4f;
+    private static final ActivationFunction DEFAULT_ACTIVATION_FUNCTION = ActivationFunction.TANH;
 
     /// The neurons in the ANN. The neurons are stored in this order: input, output, hidden.
     private final Neuron[] neurons;
@@ -24,7 +22,7 @@ public class CPPN implements NeuralNetwork {
     private final float MAX_DIFFERENCE_BETWEEN_OUTPUTS;
 
 
-    private CPPN(Builder builder) {
+    CPPN(CPPNBuilder builder) {
         if(builder.in < 1 || builder.out < 1 || builder.hidden < 0)
             throw new InvalidParameterException("Invalid number of nodes to form an ANN.");
 
@@ -252,120 +250,5 @@ public class CPPN implements NeuralNetwork {
         //leave this node
         completed[neuron] = count++;
         return new Pair<>(count, recurrent);
-    }
-
-
-    /**
-     * Used to create a Neural Network.
-     */
-    public static class Builder {
-        public float maxDifferenceBetweenOutputs;
-        private int in, out, hidden, maxRecurrentCycles;
-        private Map<Pair<Integer, Integer>, Float> connections;
-        private Map<Integer, ActivationFunction> activation; //TODO: switch to having a list of nodes
-
-
-        /**
-         * Construct a new NeuralNetwork Builder.
-         */
-        public Builder() {
-            in = -1;
-            out = -1;
-            hidden = -1;
-            maxRecurrentCycles = DEFAULT_MAX_RECURRENT_CYCLES;
-            maxDifferenceBetweenOutputs = DEFAULT_MAX_DIFFERENCE_BETWEEN_OUTPUTS;
-            connections = new HashMap<>();
-            activation = new HashMap<>();
-        }
-
-
-        /**
-         * Set the number of inputs the network should accept.
-         *
-         * @param in Number of inputs.
-         */
-        public Builder inputs(int in) {
-            this.in = in;
-            return this;
-        }
-
-
-        /**
-         * Set the number of outputs the network should generate.
-         *
-         * @param out Number of outputs.
-         */
-        public Builder outputs(int out) {
-            this.out = out;
-            return this;
-        }
-
-
-        /**
-         * Set the number of hidden nodes which should be generated.
-         *
-         * @param hidden Number of hidden nodes.
-         */
-        public Builder hidden(int hidden) {
-            this.hidden = hidden;
-            return this;
-        }
-
-
-        /**
-         * Create a connection between two nodes.
-         *
-         * @param from   Sending node.
-         * @param to     Receiving node.
-         * @param weight Multiplier of the connection.
-         */
-        public Builder connect(int from, int to, float weight) {
-            connections.put(new Pair<>(from, to), weight);
-            return this;
-        }
-
-
-        /**
-         * Set an activation function.
-         *
-         * @param node ID of the node for which the activation function should be changed.
-         * @param fn   Function which should be used by the node.
-         */
-        public Builder setFunction(int node, ActivationFunction fn) {
-            activation.put(node, fn);
-            return this;
-        }
-
-
-        /**
-         * Set the maximum number of recurrent cycle calculations to allow during computation.
-         *
-         * @param maxRecurrentCycles Max number of recurrent cycles to compute.
-         */
-        public Builder setMaxRecurrentCycles(int maxRecurrentCycles) {
-            this.maxRecurrentCycles = maxRecurrentCycles;
-            return this;
-        }
-
-
-        /**
-         * Sets the maximum difference between outputs allowed before considering the results to have converged.
-         *
-         * @param maxDifferenceBetweenOutputs The maximum difference between allowed between outputs.
-         */
-        public Builder setMaxDifferenceBetweenOutputs(float maxDifferenceBetweenOutputs) {
-            this.maxDifferenceBetweenOutputs = maxDifferenceBetweenOutputs;
-            return this;
-        }
-
-
-        /**
-         * Construct the network with the specified configuration.
-         *
-         * @return The new neural network.
-         */
-        public CPPN create() {
-            return new CPPN(this);
-        }
     }
 }

@@ -3,7 +3,8 @@ package plu.teamtwo.rtm.genome.graph;
 import plu.teamtwo.rtm.core.util.Pair;
 import plu.teamtwo.rtm.genome.Genome;
 import plu.teamtwo.rtm.genome.GenomeCache;
-import plu.teamtwo.rtm.neural.CPPN;
+import plu.teamtwo.rtm.neural.ActivationFunction;
+import plu.teamtwo.rtm.neural.CPPNBuilder;
 import plu.teamtwo.rtm.neural.NeuralNetwork;
 
 import java.security.InvalidParameterException;
@@ -23,6 +24,8 @@ public class GraphEncoding implements Genome {
     private static final int MUTATE_NEW_EDGE_TRIES = 30;
     /// Chance for a node to be added to the system.
     private static final float MUTATE_NEW_NODE = 0.03f;
+    /// Chance to mutate the traits of a node. e.g. change the activation function.
+    private static final float MUTATE_NODE_TRAITS = 0.05f;
     /// Chance for an edge's enabled status to be flipped.
     private static final float MUTATE_EDGE_TOGGLE = 0.04f;
     /// True if the genome is allowed to mutate recurrent edges
@@ -42,6 +45,15 @@ public class GraphEncoding implements Genome {
 
     private NavigableMap<Integer, Node> nodeGenes = new TreeMap<>();
     private NavigableMap<Integer, Edge> edgeGenes = new TreeMap<>();
+    private final boolean randomActivations;
+
+    //TODO: create settings object
+    /// Default activation function to use for input nodes if a random one cannot be selected.
+    private final ActivationFunction inputFunction;
+    /// Activation function to use for output nodes. (Output node will not mutate their activation function)
+    private final ActivationFunction outputFunction;
+    /// Default activation function to use for hidden nodes if a random one cannot be selected.
+    private final ActivationFunction hiddenFunction;
 
 
     /**
@@ -51,19 +63,25 @@ public class GraphEncoding implements Genome {
      * @param cache   The cache for the encoding.
      */
     GraphEncoding(GraphEncodingBuilder builder, GraphEncodingCache cache) {
+        this(builder.randomActivations, builder.inputFunction, builder.outputFunction, builder.hiddenFunction);
+
         if(builder.inputs <= 0 || builder.outputs <= 0)
             throw new InvalidParameterException("Inputs and outputs must be greater than 0.");
 
         for(int i = 0; i < builder.inputs; ++i) {
-            final Node n = new Node(cache.nextNodeID(), NodeType.INPUT);
+            ActivationFunction fn = !randomActivations ? inputFunction : ActivationFunction.randomActivationFunction();
+            final Node n = new Node(cache.nextNodeID(), NodeType.INPUT, fn);
             nodeGenes.put(n.id, n);
         }
         for(int i = 0; i < builder.outputs; ++i) {
-            final Node n = new Node(cache.nextNodeID(), NodeType.OUTPUT);
+            final Node n = new Node(cache.nextNodeID(), NodeType.OUTPUT, outputFunction);
             nodeGenes.put(n.id, n);
         }
 
-        //TODO: add initial hidden nodes
+        for(ActivationFunction fn : builder.hiddenNodes) {
+            final Node n = new Node(cache.nextNodeID(), NodeType.HIDDEN, fn);
+            nodeGenes.put(n.id, n);
+        }
 
 
         // add initial connections
@@ -75,12 +93,13 @@ public class GraphEncoding implements Genome {
                     addEdge(cache, from.id, to.id);
                 }
             }
+        } else {
+            for(Pair<Integer, Integer> c : builder.initialConnections) {
+                if(c.a < 0 || c.b < 0 || c.a >= nodeGenes.size() || c.b >= nodeGenes.size())
+                    throw new InvalidParameterException("Invalid node specified for connection.");
+                addEdge(cache, c.a, c.b);
+            }
         }
-        else { for(Pair<Integer, Integer> c : builder.initialConnections) {
-            if(c.a < 0 || c.b < 0 || c.a >= nodeGenes.size() || c.b >= nodeGenes.size())
-                throw new InvalidParameterException("Invalid node specified for connection.");
-            addEdge(cache, c.a, c.b);
-        } }
     }
 
 
@@ -90,6 +109,7 @@ public class GraphEncoding implements Genome {
      * @param other GraphEncoding to copy.
      */
     private GraphEncoding(GraphEncoding other) {
+        this(other.randomActivations, other.inputFunction, other.outputFunction, other.hiddenFunction);
         for(Node n : other.nodeGenes.values())
             nodeGenes.put(n.id, new Node(n));
         for(Edge e : other.edgeGenes.values())
@@ -101,19 +121,19 @@ public class GraphEncoding implements Genome {
      * Used to create a new, empty GraphEncoding. If this is used, make sure to initialize the list
      * of nodes to include at minimum the input and output nodes.
      */
-    private GraphEncoding() {
+    private GraphEncoding(boolean randomActivations, ActivationFunction inputFunction, ActivationFunction outputFunction, ActivationFunction hiddenFunction) {
+        this.randomActivations = randomActivations;
+        this.inputFunction = inputFunction;
+        this.outputFunction = outputFunction;
+        this.hiddenFunction = hiddenFunction;
     }
 
 
     /**
-     * Copies over the input and output nodes only.
-     *
-     * @param nodes The nodes to copy from.
+     * This should only be used by serialization.
      */
-    private GraphEncoding(Collection<Node> nodes) {
-        for(Node n : nodes)
-            if(n.nodeType == NodeType.INPUT || n.nodeType == NodeType.OUTPUT)
-                nodeGenes.put(n.id, new Node(n));
+    private GraphEncoding() {
+        this(false, null, null, null);
     }
 
 
@@ -163,6 +183,8 @@ public class GraphEncoding implements Genome {
         }
         matchingDiff /= (float) matching;
 
+        //TODO: account for different traits/activation functions of nodes
+
         final float n = 1.0f; //disjoint + excess + matching; //TODO: re-enable normalizing the distance?
         float distance = matchingDiff * DISTANCE_WEIGHT_DIFFERENCE_COST;
         distance += ((float) excess / n) * DISTANCE_EXCESS_COST;
@@ -188,10 +210,7 @@ public class GraphEncoding implements Genome {
         GraphEncoding p2 = (GraphEncoding) gp2;
 
         //make p1 the most fit parent, or if equal, the one with the least genes
-        if((p1f < p2f) ||
-                (p1f == p2f &&
-                        p1.edgeGenes.size() + p1.nodeGenes.size() >
-                                p2.edgeGenes.size() + p2.nodeGenes.size())) {
+        if((p1f < p2f) || (p1f == p2f && p1.edgeGenes.size() + p1.nodeGenes.size() > p2.edgeGenes.size() + p2.nodeGenes.size())) {
             GraphEncoding t = p1;
             p1 = p2;
             p2 = t;
@@ -199,7 +218,7 @@ public class GraphEncoding implements Genome {
 
         //go through both parents and line up innovation numbers
         // always sorted because it is a TreeSet
-        GraphEncoding child = new GraphEncoding();
+        GraphEncoding child = new GraphEncoding(randomActivations, inputFunction, outputFunction, hiddenFunction);
         Iterator<Edge> i1 = p1.edgeGenes.values().iterator();
         Iterator<Edge> i2 = p2.edgeGenes.values().iterator();
 
@@ -219,8 +238,8 @@ public class GraphEncoding implements Genome {
             } else if(e1.id == e2.id) {
                 //choose either randomly from the parents or average the weight
                 Edge edge = average ?
-                        new Edge(e1.id, e1.fromNode, e1.toNode, (e1.weight + e2.weight) / 2.0f) :
-                        new Edge(iWill(0.5f) ? e1 : e2);
+                                    new Edge(e1.id, e1.fromNode, e1.toNode, (e1.weight + e2.weight) / 2.0f) :
+                                    new Edge(iWill(0.5f) ? e1 : e2);
 
                 //chance to disable child if either parent is disabled
                 if(!e1.enabled || !e2.enabled)
@@ -245,6 +264,7 @@ public class GraphEncoding implements Genome {
             discovered.set(e.fromNode);
         }
 
+        //TODO: randomly select node traits? Currently just selects from most fit parent when it can.
         //add nodes which are used by the child from either parent (must go through both lists)
         // we make the assumption that both have the same input and output nodes, so just copy
         // from the first parent.
@@ -252,7 +272,7 @@ public class GraphEncoding implements Genome {
             Node n = p1.nodeGenes.get(i);
             if(n == null) n = p2.nodeGenes.get(i);
             if(n == null) throw new IllegalArgumentException("In GraphEncoding crossMultipoint, one of the parents " +
-                    "had an edge for which it did not have the corresponding nodes.");
+                                                             "had an edge for which it did not have the corresponding nodes.");
             child.nodeGenes.put(n.id, new Node(n));
         }
 
@@ -323,7 +343,8 @@ public class GraphEncoding implements Genome {
         } else if(iWill(MUTATE_NEW_EDGE)) {
             mutateEdge(cache);
         } else { //perform non-structural modifications
-            //TODO: add traits (including activation function)
+            if(iWill(MUTATE_NODE_TRAITS))
+                mutateNodeTraits(1);
 
             if(iWill(MUTATE_EDGE_WEIGHTS))
                 mutateWeights();
@@ -449,6 +470,25 @@ public class GraphEncoding implements Genome {
 
 
     /**
+     * Mutate nodes traits and random. For right now this only mutates the activation function, but in the future it can
+     * be extended to different types of traits.
+     *
+     * @param times Number of nodes to mutate the traits of.
+     */
+    private void mutateNodeTraits(int times) {
+        if(!randomActivations) return; //only type of trait for now
+        for(int x = 0; x < times; ++x) {
+            final int rand = getRandomNum(0, nodeGenes.size() - 1);
+            final int id = nodeIndexToID(rand);
+            final Node n = nodeGenes.get(id);
+            //do not mutate output node functions
+            if(n.nodeType == NodeType.OUTPUT) continue;
+            n.fn = ActivationFunction.randomActivationFunction();
+        }
+    }
+
+
+    /**
      * Alter the weight on edge e. Either step it or reset it depending on chance.
      */
     private void mutateWeights() {
@@ -501,16 +541,18 @@ public class GraphEncoding implements Genome {
         Edge oldEdge = edgeGenes.get(edge);
         oldEdge.enabled = false;
 
+        //TODO: store activation function in cache?
         int ids[] = cache.getMutatedNode(oldEdge.id);
         Node newNode;
         Edge edgeTo, edgeFrom;
+        ActivationFunction fn = !randomActivations ? hiddenFunction : ActivationFunction.randomActivationFunction();
         if(ids == null) {
-            newNode = new Node(cache.nextNodeID(), NodeType.HIDDEN);
+            newNode = new Node(cache.nextNodeID(), NodeType.HIDDEN, fn);
             edgeTo = new Edge(cache.nextEdgeID(), oldEdge.fromNode, newNode.id, oldEdge.weight);
             edgeFrom = new Edge(cache.nextEdgeID(), newNode.id, oldEdge.toNode, 1);
             cache.addMutatedNode(newNode.id, edgeTo.id, edgeFrom.id, oldEdge.id);
         } else {
-            newNode = new Node(ids[0], NodeType.HIDDEN);
+            newNode = new Node(ids[0], NodeType.HIDDEN, fn);
             edgeTo = new Edge(ids[1], oldEdge.fromNode, newNode.id, oldEdge.weight);
             edgeFrom = new Edge(ids[2], newNode.id, oldEdge.toNode, 1);
         }
@@ -556,7 +598,6 @@ public class GraphEncoding implements Genome {
      */
     @Override
     public NeuralNetwork constructNeuralNetwork() {
-        //TODO: use modified sigmoid function described in paper?
         //create lists of each type of node
         Map<Integer, Integer> nodes = new HashMap<>(nodeGenes.size()); //Map the node ID to the ANN Index
         int inputs = 0, outputs = 0, hidden = 0, count = 0;
@@ -584,21 +625,14 @@ public class GraphEncoding implements Genome {
                 nodes.put(n.id, count++);
 
         //construct a neural network now that we know the sizes
-        CPPN.Builder net = new CPPN.Builder()
-                .inputs(inputs)
-                .outputs(outputs)
-                .hidden(hidden);
+        CPPNBuilder net = new CPPNBuilder()
+                                   .inputs(inputs)
+                                   .outputs(outputs)
+                                   .hidden(hidden);
 
-        //set the activation functions (not needed presently)
-        /*{
-            int i = 0;
-            for(Node n : inputs)
-                net.setFunction(i++, n.function)
-            for(Node n : outputs)
-                net.setFunction(i++, n.function)
-            for(Node n : hidden)
-                net.setFunction(i++, n.function)
-        }*/
+        //for all nodeIDs, find the activation function and set it to that in the network
+        for(int k : nodes.keySet())
+            net.setFunction(nodes.get(k), nodeGenes.get(k).fn);
 
         //TODO: make sure there are not duplicate edges making their way into the system
         //create the connections

@@ -16,7 +16,7 @@ public class NeuralNetworkTest {
         //0 -> 2
         //1 -> 3
 
-         CPPN.Builder builder = new CPPN.Builder()
+         CPPNBuilder builder = new CPPNBuilder()
                  .inputs(2)
                  .outputs(2)
                  .hidden(0)
@@ -49,7 +49,7 @@ public class NeuralNetworkTest {
         //2 -> 4
         //4 -> 3
 
-        NeuralNetwork net = new CPPN.Builder()
+        NeuralNetwork net = new CPPNBuilder()
                 .inputs(3)
                 .outputs(1)
                 .hidden(1)
@@ -79,7 +79,7 @@ public class NeuralNetworkTest {
         //2 -> 3
         //3 -> 2, 3
 
-         CPPN.Builder builder = new CPPN.Builder()
+         CPPNBuilder builder = new CPPNBuilder()
                  .inputs(2)
                  .outputs(1)
                  .hidden(1)
@@ -114,7 +114,7 @@ public class NeuralNetworkTest {
         //2 -> 3
         //3 -> 1
 
-        CPPN.Builder builder = new CPPN.Builder()
+        CPPNBuilder builder = new CPPNBuilder()
                 .inputs(1)
                 .outputs(1)
                 .hidden(2)

@@ -4,6 +4,7 @@ import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
 import plu.teamtwo.rtm.genome.graph.GraphEncodingBuilder;
 import plu.teamtwo.rtm.neat.*;
+import plu.teamtwo.rtm.neural.ActivationFunction;
 
 import java.io.FileDescriptor;
 import java.io.FileOutputStream;
@@ -21,7 +22,12 @@ public class XOR implements Runnable {
     public void run() {
         PrintStream output = new PrintStream(new FileOutputStream(FileDescriptor.out));
         GAController controller = new GAController(
-                new GraphEncodingBuilder().inputs(3).outputs(1)
+                new GraphEncodingBuilder()
+                        .inputs(3)
+                        .outputs(1)
+                        .inputFunction(ActivationFunction.TANH)
+                        .outputFunction(ActivationFunction.TANH)
+                        .hiddenFunction(ActivationFunction.TANH)
         );
 
         controller.createFirstGeneration();

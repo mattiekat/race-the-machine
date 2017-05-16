@@ -14,8 +14,8 @@ public enum ActivationFunction {
     ABS((Float x) -> x >= 0 ? x : -x),
     GAUSSIAN((Float x) -> (float) Math.exp(-(x * x))),
     LINEAR((Float x) -> x),
-    SIGMOID((Float x) -> (1.0f / (1.0f + (float) Math.exp(-4.9 * x)))), //TODO: keep modified sigmoid function?
-    SINC((Float x) -> (float) Math.sin(x) / x),
+    SIGMOID((Float x) -> (1.0f / (1.0f + (float) Math.exp(x)))),
+    SINC((Float x) -> x == 0.0f ? 1.0f : (float) Math.sin(x) / x),
     SINUSOID((Float x) -> (float) Math.sin(x)),
     SOFTPLUS((Float x) -> (float) Math.log1p(Math.exp(x))),
     SYMETRIC((Float x) -> (x >= 0 ? -x : x) + 1.0f),
@@ -44,6 +44,22 @@ public enum ActivationFunction {
         ActivationFunction[] fns = ActivationFunction.class.getEnumConstants();
         int x = Rand.getRandomNum(0, fns.length - 1);
         return fns[x];
+    }
+
+
+    /**
+     * Bound a number to a range. The result of this function will be in the range [min, max]. If the number goes out of
+     * bounds in either direction, it will be set to the boundary it surpassed.
+     *
+     * @param min The minimum value the number can take.
+     * @param max The maximum value the number can take.
+     * @param num The number to bound.
+     * @return A number which is within the range [min, max]
+     */
+    public static float bound(float min, float max, float num) {
+        num = num < min ? min : num;
+        num = num > max ? max : num;
+        return num;
     }
 
 
