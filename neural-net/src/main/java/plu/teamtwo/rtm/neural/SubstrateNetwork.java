@@ -50,10 +50,9 @@ public class SubstrateNetwork implements NeuralNetwork {
             layerSizes[i] = size;
         }
 
-//        for(int i = 0; i < weights.length; ++i) {
-//            if(weights[i].length != layerSizes[i] * layerSizes[i+1])
-//                throw new InvalidParameterException("Weights must have exactly 1 value for every input and output combination between layers.");
-//        }
+        for(int i = 0; i < weights.length; ++i)
+            if(weights[i].length != layerSizes[i] * layerSizes[i+1])
+                throw new InvalidParameterException("Weights must have exactly 1 value for every input and output combination between layers.");
     }
 
 
