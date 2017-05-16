@@ -6,27 +6,10 @@ import java.util.HashMap;
 import java.util.Map;
 
 public class CPPNBuilder implements NeuralNetworkBuilder {
-    private static final int DEFAULT_MAX_RECURRENT_CYCLES = 20;
-    private static final float DEFAULT_MAX_DIFFERENCE_BETWEEN_OUTPUTS = 1e-4f;
-
-    public float maxDifferenceBetweenOutputs;
-    int in, out, hidden, maxRecurrentCycles;
-    Map<Pair<Integer, Integer>, Float> connections;
-    Map<Integer, ActivationFunction> activation; //TODO: switch to having a list of nodes
-
-
-    /**
-     * Construct a new NeuralNetwork Builder.
-     */
-    public CPPNBuilder() {
-        in = -1;
-        out = -1;
-        hidden = -1;
-        maxRecurrentCycles = DEFAULT_MAX_RECURRENT_CYCLES;
-        maxDifferenceBetweenOutputs = DEFAULT_MAX_DIFFERENCE_BETWEEN_OUTPUTS;
-        connections = new HashMap<>();
-        activation = new HashMap<>();
-    }
+    float maxDifferenceBetweenOutputs = 1e-4f;
+    int in = -1, out = -1, hidden = -1, maxRecurrentCycles = 20;
+    Map<Pair<Integer, Integer>, Float> connections = new HashMap<>();
+    Map<Integer, ActivationFunction> activation = new HashMap<>(); //TODO: switch to having a list of nodes
 
 
     /**
