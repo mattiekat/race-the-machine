@@ -1,11 +1,18 @@
 package plu.teamtwo.rtm.genome.graph;
 
+import plu.teamtwo.rtm.core.util.Pair;
 import plu.teamtwo.rtm.genome.Genome;
 import plu.teamtwo.rtm.genome.GenomeBuilder;
 import plu.teamtwo.rtm.genome.GenomeCache;
 
+import java.security.InvalidParameterException;
+import java.util.LinkedList;
+import java.util.List;
+
 public class GraphEncodingBuilder implements GenomeBuilder {
     int inputs = 0, outputs = 0;
+    List<Pair<Integer, Integer>> initialConnections = null;
+    //List<>
 
 
     /**
@@ -26,6 +33,30 @@ public class GraphEncodingBuilder implements GenomeBuilder {
      */
     public GraphEncodingBuilder outputs(int outputs) {
         this.outputs = outputs;
+        return this;
+    }
+
+
+    /**
+     * Specify that this graph encoding should start with no initial connections. This does not need to be called if
+     * manually setting connections.
+     */
+    public GraphEncodingBuilder emptyInit() {
+        initialConnections = new LinkedList<>();
+        return this;
+    }
+
+
+    /**
+     * Manually specify a connection between two nodes. If this is used, then it must be used for all connections that
+     * should exist.
+     *
+     * @param f From node; the starting node of the connection.
+     * @param t To node; the destination node of the connection.
+     */
+    public GraphEncodingBuilder connect(int f, int t) {
+        if(initialConnections == null) initialConnections = new LinkedList<>();
+        initialConnections.add(new Pair<>(f, t));
         return this;
     }
 

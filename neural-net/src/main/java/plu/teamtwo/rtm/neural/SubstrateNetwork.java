@@ -20,6 +20,7 @@ public class SubstrateNetwork implements NeuralNetwork {
 
     /**
      * Construct a substrate network with n layers each capable of having their own number of dimensions.
+     *
      * @param layers  Top level array is of layers, deeper level array is of the dimensions for the layer.
      * @param weights Top level array defines the layers being connected, lower level array defines the weight for each
      *                input coordinate to output coordinate connection in the form (output, input). For example,
@@ -34,8 +35,27 @@ public class SubstrateNetwork implements NeuralNetwork {
         if(weights.length != layers.length - 1)
             throw new InvalidParameterException("Invalid number of weights for the layers.");
 
-        layerSizes = new int[layers.length];
-        //for all layers
+        layerSizes = calculateLayerSizes(layers);
+
+        for(int i = 0; i < weights.length; ++i)
+            if(weights[i].length != layerSizes[i] * layerSizes[i + 1])
+                throw new InvalidParameterException("Weights must have exactly 1 value for every input and output combination between layers.");
+    }
+
+
+    /**
+     * Calculate the size of all layers. This calculates the product of all the dimensions maximum value in a layer.
+     * The results of this allow for calculating the needed length of a single-dimension to rpresent the whole
+     * multi-dimensional space.
+     * <p>
+     * Think of the dimensions less as physical dimensions, and instead as the dimensions of a square or a cube, since
+     * the layer-space is finite.
+     *
+     * @param layers The dimensions of each layer.
+     * @return The maximum size of each layer given the dimensions for it.
+     */
+    public static int[] calculateLayerSizes(int[][] layers) {
+        int[] layerSizes = new int[layers.length];
         for(int i = 0; i < layers.length; ++i) {
             //find product of all dimensions
             int size = 1;
@@ -50,9 +70,7 @@ public class SubstrateNetwork implements NeuralNetwork {
             layerSizes[i] = size;
         }
 
-        for(int i = 0; i < weights.length; ++i)
-            if(weights[i].length != layerSizes[i] * layerSizes[i+1])
-                throw new InvalidParameterException("Weights must have exactly 1 value for every input and output combination between layers.");
+        return layerSizes;
     }
 
 

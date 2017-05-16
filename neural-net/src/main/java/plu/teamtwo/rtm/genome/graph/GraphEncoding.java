@@ -1,5 +1,6 @@
 package plu.teamtwo.rtm.genome.graph;
 
+import plu.teamtwo.rtm.core.util.Pair;
 import plu.teamtwo.rtm.genome.Genome;
 import plu.teamtwo.rtm.genome.GenomeCache;
 import plu.teamtwo.rtm.neural.CPPN;
@@ -61,6 +62,25 @@ public class GraphEncoding implements Genome {
             final Node n = new Node(cache.nextNodeID(), NodeType.OUTPUT);
             nodeGenes.put(n.id, n);
         }
+
+        //TODO: add initial hidden nodes
+
+
+        // add initial connections
+        if(builder.initialConnections == null) {
+            //create an edge from every input to every output
+            for(Node from : nodeGenes.values()) {
+                for(Node to : nodeGenes.values()) {
+                    if(from == to || from.nodeType != NodeType.INPUT || to.nodeType != NodeType.OUTPUT) continue;
+                    addEdge(cache, from.id, to.id);
+                }
+            }
+        }
+        else { for(Pair<Integer, Integer> c : builder.initialConnections) {
+            if(c.a < 0 || c.b < 0 || c.a >= nodeGenes.size() || c.b >= nodeGenes.size())
+                throw new InvalidParameterException("Invalid node specified for connection.");
+            addEdge(cache, c.a, c.b);
+        } }
     }
 
 
@@ -255,21 +275,13 @@ public class GraphEncoding implements Genome {
 
     /**
      * Used for initial members of the first generation to create connections between the inputs and outputs. This
-     * should not be needed after the first generation. It is reccomended that mutate be called after this function to
+     * should not be needed after the first generation. It is recommended that mutate be called after this function to
      * give the initial species some variation.
      *
      * @param gCache Cached information about the nodes and edges.
      */
     @Override
     public void initialize(GenomeCache gCache) {
-        GraphEncodingCache cache = (GraphEncodingCache) gCache;
-        //create an edge from every input to every output
-        for(Node from : nodeGenes.values()) {
-            for(Node to : nodeGenes.values()) {
-                if(from == to || from.nodeType != NodeType.INPUT || to.nodeType != NodeType.OUTPUT) continue;
-                addEdge(cache, from.id, to.id);
-            }
-        }
     }
 
 
