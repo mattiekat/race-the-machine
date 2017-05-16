@@ -1,20 +1,19 @@
-package plu.teamtwo.rtm.neat;
+package plu.teamtwo.rtm.genome.graph;
 
 class Node implements Comparable<Node> {
-    /// The historically-based ID of this Node
-    public final int id;
-    public NodeType nodeType;
-   // public NodeType functionType;
-
     private static int nextNodeID = 0;
+    /// The historically-based ID of this Node
+    final int id;
+    // public NodeType functionType;
+    NodeType nodeType;
 
 
-    public Node(Node other) {
+    Node(Node other) {
         this(other.id, other.nodeType);
     }
 
 
-    public Node(int id, NodeType nodeType) {
+    Node(int id, NodeType nodeType) {
         nextNodeID = Math.max(id + 1, nextNodeID);
 
         this.id = id;

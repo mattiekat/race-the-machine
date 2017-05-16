@@ -1,7 +1,6 @@
-package plu.teamtwo.rtm.neat;
+package plu.teamtwo.rtm.genome;
 
 import plu.teamtwo.rtm.core.util.Pair;
-import plu.teamtwo.rtm.neural.NeuralNetwork;
 import plu.teamtwo.rtm.neural.NeuralNetworkComposition;
 
 public class GenomeComposition extends Pair<Genome, Genome> implements Genome {

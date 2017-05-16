@@ -8,7 +8,7 @@ public class DirectEncodingTest {
 //    @Test
 //    public void testGetANN() {
 //        DirectEncodingCache cache = new DirectEncodingCache();
-//        DirectEncoding genome = new DirectEncoding(cache, 7, 10);
+//        GraphEncoding genome = new GraphEncoding(cache, 7, 10);
 //        genome.initialize(cache);
 //        NeuralNetwork net = genome.constructNeuralNetwork();
 //    }

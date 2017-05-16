@@ -3,6 +3,9 @@ package plu.teamtwo.rtm.neat;
 import com.google.gson.Gson;
 import com.google.gson.stream.JsonReader;
 import com.google.gson.stream.JsonWriter;
+import plu.teamtwo.rtm.genome.GenomeBuilder;
+import plu.teamtwo.rtm.genome.GenomeCache;
+import plu.teamtwo.rtm.genome.graph.GraphEncoding;
 import plu.teamtwo.rtm.neural.NeuralNetwork;
 
 import java.io.*;
@@ -37,9 +40,7 @@ public class GAController {
     /// Desired number of species.
     private static final int TARGET_NUMBER_OF_SPECIES = 5;
 
-    public final Encoding encoding;
-    private final int inputs;
-    private final int outputs;
+    private final GenomeBuilder genomeSpecs;
     private GenomeCache cache;
     private int generationNum;
     private int nextSpeciesID;
@@ -51,13 +52,8 @@ public class GAController {
 
 
     //TODO: take parameter settings
-    public GAController(Encoding encoding, int inputs, int outputs) {
-        if(inputs <= 0 || outputs <= 0)
-            throw new InvalidParameterException("The number of inputs and outputs must be greater than 0.");
-
-        this.encoding = encoding;
-        this.inputs = inputs;
-        this.outputs = outputs;
+    public GAController(GenomeBuilder genomeSpecs) {
+        this.genomeSpecs = genomeSpecs;
         this.cache = null;
         this.generationNum = 0;
         this.nextSpeciesID = 0;
@@ -126,12 +122,8 @@ public class GAController {
         Individual base = null;
         sorted = false;
 
-        switch(encoding) {
-            case DIRECT_ENCODING:
-                cache = new DirectEncodingCache();
-                base = new Individual(new DirectEncoding(cache, inputs, outputs));
-                break;
-        }
+        cache = genomeSpecs.createCache();
+        base = new Individual(genomeSpecs.create(cache));
 
         for(int x = 0; x < POPULATION_SIZE; ++x) {
             Individual i = new Individual(base);

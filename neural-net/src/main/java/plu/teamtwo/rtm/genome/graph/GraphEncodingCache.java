@@ -1,50 +1,15 @@
-package plu.teamtwo.rtm.neat;
+package plu.teamtwo.rtm.genome.graph;
 
-import plu.teamtwo.rtm.core.util.Pair;
+import plu.teamtwo.rtm.genome.GenomeCache;
 
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Map;
 
 /**
- * Used to track mutations within a generation to properly give the same identification.
- */
-interface GenomeCache {
-    /**
-     * Called when a new generation is created, will setup cache for continued use.
-     */
-    void newGeneration();
-}
-
-
-
-class CacheComposition extends Pair<GenomeCache, GenomeCache> implements GenomeCache {
-    CacheComposition() {
-        super();
-    }
-
-
-    CacheComposition(GenomeCache a, GenomeCache b) {
-        super(a, b);
-    }
-
-
-    /**
-     * Called when a new generation is created, will setup cache for continued use.
-     */
-    @Override
-    public void newGeneration() {
-        a.newGeneration();
-        b.newGeneration();
-    }
-}
-
-
-
-/**
  * Used to track mutations within a generation to properly give the same node ids and edge ids.
  */
-class DirectEncodingCache implements GenomeCache {
+class GraphEncodingCache implements GenomeCache {
     private Map<Integer, int[]> mutatedNodes = new HashMap<>();
     private Map<Long, Integer> mutatedEdges = new HashMap<>();
 

@@ -47,7 +47,7 @@ class CartPoleScore(object):
 if __name__ == '__main__':
     gateway = JavaGateway(callback_server_parameters=CallbackServerParameters())
 
-    gateway.entry_point.init(gateway.jvm.plu.teamtwo.rtm.neat.Encoding.DIRECT_ENCODING, 4, 2)
+    gateway.entry_point.init(gateway.jvm.plu.teamtwo.rtm.genome.graph.GraphEncodingBuilder().inputs(4).outputs(2))
     controller = gateway.entry_point.getController()
     controller.createFirstGeneration()
 

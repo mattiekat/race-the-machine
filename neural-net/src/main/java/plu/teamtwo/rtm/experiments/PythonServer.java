@@ -1,6 +1,6 @@
 package plu.teamtwo.rtm.experiments;
 
-import plu.teamtwo.rtm.neat.Encoding;
+import plu.teamtwo.rtm.genome.GenomeBuilder;
 import plu.teamtwo.rtm.neat.GAController;
 import py4j.GatewayServer;
 
@@ -11,8 +11,8 @@ public class PythonServer {
         controller = null;
     }
 
-    public void init(Encoding encoding, int inputs, int outputs) {
-        controller = new GAController(encoding, inputs, outputs);
+    public void init(GenomeBuilder genomeSpecs) {
+        controller = new GAController(genomeSpecs);
     }
 
     public GAController getController() {

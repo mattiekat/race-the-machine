@@ -1,4 +1,4 @@
-package plu.teamtwo.rtm.neat;
+package plu.teamtwo.rtm.genome;
 
 import plu.teamtwo.rtm.neural.NeuralNetwork;
 

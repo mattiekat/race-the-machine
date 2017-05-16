@@ -1,5 +1,7 @@
-package plu.teamtwo.rtm.neat;
+package plu.teamtwo.rtm.genome.graph;
 
+import plu.teamtwo.rtm.genome.Genome;
+import plu.teamtwo.rtm.genome.GenomeCache;
 import plu.teamtwo.rtm.neural.CPPN;
 import plu.teamtwo.rtm.neural.NeuralNetwork;
 
@@ -9,7 +11,7 @@ import java.util.*;
 import static plu.teamtwo.rtm.core.util.Rand.getRandomNum;
 import static plu.teamtwo.rtm.core.util.Rand.iWill;
 
-class DirectEncoding implements Genome {
+public class GraphEncoding implements Genome {
     /// Chance to mutate the edge weights.
     private static final float MUTATE_EDGE_WEIGHTS = 0.8f;
     /// Chance that an edge weight which is being mutated will be reinitialized.
@@ -42,22 +44,20 @@ class DirectEncoding implements Genome {
 
 
     /**
-     * Create a new DirectEncoding with the correct input and output nodes.
+     * Construct a new graph encoding using a builder. Should only be called from the builder.
      *
-     * @param gCache  Cached information about the nodes and edges.
-     * @param inputs  Number of inputs the system should accept.
-     * @param outputs Number of outputs the system should generate.
+     * @param builder The builder with information about construction.
+     * @param cache   The cache for the encoding.
      */
-    DirectEncoding(GenomeCache gCache, int inputs, int outputs) {
-        if(inputs <= 0 || outputs <= 0)
+    GraphEncoding(GraphEncodingBuilder builder, GraphEncodingCache cache) {
+        if(builder.inputs <= 0 || builder.outputs <= 0)
             throw new InvalidParameterException("Inputs and outputs must be greater than 0.");
-        DirectEncodingCache cache = (DirectEncodingCache) gCache;
 
-        for(int i = 0; i < inputs; ++i) {
+        for(int i = 0; i < builder.inputs; ++i) {
             final Node n = new Node(cache.nextNodeID(), NodeType.INPUT);
             nodeGenes.put(n.id, n);
         }
-        for(int i = 0; i < outputs; ++i) {
+        for(int i = 0; i < builder.outputs; ++i) {
             final Node n = new Node(cache.nextNodeID(), NodeType.OUTPUT);
             nodeGenes.put(n.id, n);
         }
@@ -65,11 +65,11 @@ class DirectEncoding implements Genome {
 
 
     /**
-     * Make a deep copy of another DirectEncoding.
+     * Make a deep copy of another GraphEncoding.
      *
-     * @param other DirectEncoding to copy.
+     * @param other GraphEncoding to copy.
      */
-    DirectEncoding(DirectEncoding other) {
+    private GraphEncoding(GraphEncoding other) {
         for(Node n : other.nodeGenes.values())
             nodeGenes.put(n.id, new Node(n));
         for(Edge e : other.edgeGenes.values())
@@ -78,10 +78,10 @@ class DirectEncoding implements Genome {
 
 
     /**
-     * Used to create a new, empty DirectEncoding. If this is used, make sure to initialize the list
+     * Used to create a new, empty GraphEncoding. If this is used, make sure to initialize the list
      * of nodes to include at minimum the input and output nodes.
      */
-    private DirectEncoding() {
+    private GraphEncoding() {
     }
 
 
@@ -90,7 +90,7 @@ class DirectEncoding implements Genome {
      *
      * @param nodes The nodes to copy from.
      */
-    private DirectEncoding(Collection<Node> nodes) {
+    private GraphEncoding(Collection<Node> nodes) {
         for(Node n : nodes)
             if(n.nodeType == NodeType.INPUT || n.nodeType == NodeType.OUTPUT)
                 nodeGenes.put(n.id, new Node(n));
@@ -105,7 +105,7 @@ class DirectEncoding implements Genome {
      * @param d2 Second genome.
      * @return The compatibility distance.
      */
-    public static float compatibilityDistance(DirectEncoding d1, DirectEncoding d2) {
+    public static float compatibilityDistance(GraphEncoding d1, GraphEncoding d2) {
         //go through both parents and line up innovation numbers
         // always sorted because it is a TreeSet
         Iterator<Edge> i1 = d1.edgeGenes.values().iterator();
@@ -162,24 +162,24 @@ class DirectEncoding implements Genome {
      * @return A child which is the result of crossing the genomes
      */
     @Override
-    public DirectEncoding crossMultipoint(GenomeCache cache, final float p1f, Genome gp2,
-                                          final float p2f, final boolean average) {
-        DirectEncoding p1 = this;
-        DirectEncoding p2 = (DirectEncoding) gp2;
+    public GraphEncoding crossMultipoint(GenomeCache cache, final float p1f, Genome gp2,
+                                         final float p2f, final boolean average) {
+        GraphEncoding p1 = this;
+        GraphEncoding p2 = (GraphEncoding) gp2;
 
         //make p1 the most fit parent, or if equal, the one with the least genes
         if((p1f < p2f) ||
                 (p1f == p2f &&
                         p1.edgeGenes.size() + p1.nodeGenes.size() >
                                 p2.edgeGenes.size() + p2.nodeGenes.size())) {
-            DirectEncoding t = p1;
+            GraphEncoding t = p1;
             p1 = p2;
             p2 = t;
         }
 
         //go through both parents and line up innovation numbers
         // always sorted because it is a TreeSet
-        DirectEncoding child = new DirectEncoding();
+        GraphEncoding child = new GraphEncoding();
         Iterator<Edge> i1 = p1.edgeGenes.values().iterator();
         Iterator<Edge> i2 = p2.edgeGenes.values().iterator();
 
@@ -231,7 +231,7 @@ class DirectEncoding implements Genome {
         for(int i = discovered.nextSetBit(0); i >= 0; i = discovered.nextSetBit(i + 1)) {
             Node n = p1.nodeGenes.get(i);
             if(n == null) n = p2.nodeGenes.get(i);
-            if(n == null) throw new IllegalArgumentException("In DirectEncoding crossMultipoint, one of the parents " +
+            if(n == null) throw new IllegalArgumentException("In GraphEncoding crossMultipoint, one of the parents " +
                     "had an edge for which it did not have the corresponding nodes.");
             child.nodeGenes.put(n.id, new Node(n));
         }
@@ -249,7 +249,7 @@ class DirectEncoding implements Genome {
      */
     @Override
     public float compatibilityDistance(Genome gOther) {
-        return compatibilityDistance(this, (DirectEncoding) gOther);
+        return compatibilityDistance(this, (GraphEncoding) gOther);
     }
 
 
@@ -262,7 +262,7 @@ class DirectEncoding implements Genome {
      */
     @Override
     public void initialize(GenomeCache gCache) {
-        DirectEncodingCache cache = (DirectEncodingCache) gCache;
+        GraphEncodingCache cache = (GraphEncodingCache) gCache;
         //create an edge from every input to every output
         for(Node from : nodeGenes.values()) {
             for(Node to : nodeGenes.values()) {
@@ -279,19 +279,19 @@ class DirectEncoding implements Genome {
      * @return A duplicate of the current instance.
      */
     @Override
-    public DirectEncoding duplicate() {
-        return new DirectEncoding(this);
+    public GraphEncoding duplicate() {
+        return new GraphEncoding(this);
     }
 
 
     /**
-     * Used to create a new DirectEncoding Cache.
+     * Used to create a new GraphEncoding Cache.
      *
-     * @return A new DirectEncoding Cache.
+     * @return A new GraphEncoding Cache.
      */
     @Override
     public GenomeCache createCache() {
-        return new DirectEncodingCache();
+        return new GraphEncodingCache();
     }
 
 
@@ -303,7 +303,7 @@ class DirectEncoding implements Genome {
      */
     @Override
     public void mutate(GenomeCache gCache) {
-        DirectEncodingCache cache = (DirectEncodingCache) gCache;
+        GraphEncodingCache cache = (GraphEncodingCache) gCache;
 
         //Perform structural mutations first
         if(iWill(MUTATE_NEW_NODE)) {
@@ -337,7 +337,7 @@ class DirectEncoding implements Genome {
      *
      * @param cache
      */
-    private void mutateNode(DirectEncodingCache cache) {
+    private void mutateNode(GraphEncodingCache cache) {
         final int index = getRandomNum(0, edgeGenes.size() - 1);
         final int edge = edgeIndexToID(index);
         addNode(cache, edge);
@@ -349,7 +349,7 @@ class DirectEncoding implements Genome {
      *
      * @param cache Cached information about the nodes and edges.
      */
-    private void mutateEdge(DirectEncodingCache cache) {
+    private void mutateEdge(GraphEncodingCache cache) {
         for(int x = 0; x < MUTATE_NEW_EDGE_TRIES; ++x) {
             int from, to;
             do {
@@ -457,7 +457,7 @@ class DirectEncoding implements Genome {
      * @param nodeTo   Termination node for the edge.
      * @return True if the Edge was added successfully.
      */
-    private boolean addEdge(DirectEncodingCache cache, int nodeFrom, int nodeTo) {
+    private boolean addEdge(GraphEncodingCache cache, int nodeFrom, int nodeTo) {
         //check if the edge already exists
         for(Edge e : edgeGenes.values())
             if(e.fromNode == nodeFrom && e.toNode == nodeTo)
@@ -485,7 +485,7 @@ class DirectEncoding implements Genome {
      * @param cache Cached information about the nodes and edges.
      * @param edge  The edge along which to add a node.
      */
-    private void addNode(DirectEncodingCache cache, int edge) {
+    private void addNode(GraphEncodingCache cache, int edge) {
         Edge oldEdge = edgeGenes.get(edge);
         oldEdge.enabled = false;
 

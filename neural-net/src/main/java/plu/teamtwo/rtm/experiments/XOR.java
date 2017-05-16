@@ -2,6 +2,7 @@ package plu.teamtwo.rtm.experiments;
 
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
+import plu.teamtwo.rtm.genome.graph.GraphEncodingBuilder;
 import plu.teamtwo.rtm.neat.*;
 
 import java.io.FileDescriptor;
@@ -20,8 +21,7 @@ public class XOR implements Runnable {
     public void run() {
         PrintStream output = new PrintStream(new FileOutputStream(FileDescriptor.out));
         GAController controller = new GAController(
-                Encoding.DIRECT_ENCODING,
-                3, 1
+                new GraphEncodingBuilder().inputs(3).outputs(1)
         );
 
         controller.createFirstGeneration();

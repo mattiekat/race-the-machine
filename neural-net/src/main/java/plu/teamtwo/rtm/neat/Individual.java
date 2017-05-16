@@ -1,5 +1,8 @@
 package plu.teamtwo.rtm.neat;
 
+import plu.teamtwo.rtm.genome.Genome;
+import plu.teamtwo.rtm.genome.GenomeCache;
+
 import java.security.InvalidParameterException;
 
 //TODO: register json conversion functions for this class to allow it to correctly initialize from any genome
