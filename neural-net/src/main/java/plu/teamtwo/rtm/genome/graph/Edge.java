@@ -1,6 +1,6 @@
-package plu.teamtwo.rtm.neat;
+package plu.teamtwo.rtm.genome.graph;
 
-class Edge implements Comparable<Edge> {
+class Edge implements Comparable<plu.teamtwo.rtm.genome.graph.Edge> {
     /// The historically-based ID of this edge (innovation number)
     final int id;
     boolean enabled;
@@ -9,7 +9,7 @@ class Edge implements Comparable<Edge> {
     float weight;
 
 
-    Edge(Edge other) {
+    Edge(plu.teamtwo.rtm.genome.graph.Edge other) {
         this(other.id, other.fromNode, other.toNode, other.weight);
         enabled = other.enabled;
     }
@@ -26,7 +26,7 @@ class Edge implements Comparable<Edge> {
 
     @Override
     public boolean equals(Object other) {
-        return other instanceof Edge && compareTo((Edge) other) == 0;
+        return other instanceof plu.teamtwo.rtm.genome.graph.Edge && compareTo((plu.teamtwo.rtm.genome.graph.Edge) other) == 0;
     }
 
 
@@ -37,7 +37,7 @@ class Edge implements Comparable<Edge> {
 
 
     @Override
-    public int compareTo(Edge other) {
+    public int compareTo(plu.teamtwo.rtm.genome.graph.Edge other) {
         return this.id - other.id;
     }
 }

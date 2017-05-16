@@ -56,7 +56,7 @@ class LunarLanderScore(object):
 if __name__ == '__main__':
     gateway = JavaGateway(callback_server_parameters=CallbackServerParameters())
 
-    gateway.entry_point.init(gateway.jvm.plu.teamtwo.rtm.neat.Encoding.DIRECT_ENCODING, INPUT_SIZE, OUTPUT_SIZE)
+    gateway.entry_point.init(gateway.jvm.plu.teamtwo.rtm.genome.graph.GraphEncodingBuilder().inputs(INPUT_SIZE).outputs(OUTPUT_SIZE))
     controller = gateway.entry_point.getController()
     controller.createFirstGeneration()
 

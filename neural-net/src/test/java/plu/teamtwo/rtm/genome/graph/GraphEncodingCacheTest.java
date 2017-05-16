@@ -1,14 +1,14 @@
-package plu.teamtwo.rtm.neat;
+package plu.teamtwo.rtm.genome.graph;
 
 import org.junit.Test;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 
-public class DirectEncodingCacheTest {
+public class GraphEncodingCacheTest {
     @Test
     public void testGetNextID() {
-        DirectEncodingCache cache = new DirectEncodingCache();
+        GraphEncodingCache cache = new GraphEncodingCache();
         for(int x = 0; x < 100; ++x) {
             assertEquals(x, cache.nextNodeID());
             assertEquals(x, cache.nextEdgeID());
@@ -18,7 +18,7 @@ public class DirectEncodingCacheTest {
 
     @Test
     public void testMutatedNodes() {
-        DirectEncodingCache cache = new DirectEncodingCache();
+        GraphEncodingCache cache = new GraphEncodingCache();
         assertEquals(null, cache.getMutatedNode(0));
         cache.addMutatedNode(4, 1, 2, 0);
         int[] info = cache.getMutatedNode(0);
@@ -35,7 +35,7 @@ public class DirectEncodingCacheTest {
 
     @Test
     public void testMutatedEdges() {
-        DirectEncodingCache cache = new DirectEncodingCache();
+        GraphEncodingCache cache = new GraphEncodingCache();
         for(int x = 0; x < 10; ++x)
             for(int y = 0; y < 10; ++y)
                 assertEquals(-1, cache.getMutatedEdge(x, y));

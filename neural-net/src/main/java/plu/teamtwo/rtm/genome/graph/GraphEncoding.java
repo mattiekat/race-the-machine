@@ -1,5 +1,8 @@
-package plu.teamtwo.rtm.neat;
+package plu.teamtwo.rtm.genome.graph;
 
+import plu.teamtwo.rtm.genome.Genome;
+import plu.teamtwo.rtm.genome.GenomeCache;
+import plu.teamtwo.rtm.neural.CPPN;
 import plu.teamtwo.rtm.neural.NeuralNetwork;
 
 import java.security.InvalidParameterException;
@@ -8,7 +11,7 @@ import java.util.*;
 import static plu.teamtwo.rtm.core.util.Rand.getRandomNum;
 import static plu.teamtwo.rtm.core.util.Rand.iWill;
 
-class DirectEncoding extends Genome {
+public class GraphEncoding implements Genome {
     /// Chance to mutate the edge weights.
     private static final float MUTATE_EDGE_WEIGHTS = 0.8f;
     /// Chance that an edge weight which is being mutated will be reinitialized.
@@ -41,22 +44,20 @@ class DirectEncoding extends Genome {
 
 
     /**
-     * Create a new DirectEncoding with the correct input and output nodes.
+     * Construct a new graph encoding using a builder. Should only be called from the builder.
      *
-     * @param gCache  Cached information about the nodes and edges.
-     * @param inputs  Number of inputs the system should accept.
-     * @param outputs Number of outputs the system should generate.
+     * @param builder The builder with information about construction.
+     * @param cache   The cache for the encoding.
      */
-    DirectEncoding(GenomeCache gCache, int inputs, int outputs) {
-        if(inputs <= 0 || outputs <= 0)
+    GraphEncoding(GraphEncodingBuilder builder, GraphEncodingCache cache) {
+        if(builder.inputs <= 0 || builder.outputs <= 0)
             throw new InvalidParameterException("Inputs and outputs must be greater than 0.");
-        DirectEncodingCache cache = (DirectEncodingCache) gCache;
 
-        for(int i = 0; i < inputs; ++i) {
+        for(int i = 0; i < builder.inputs; ++i) {
             final Node n = new Node(cache.nextNodeID(), NodeType.INPUT);
             nodeGenes.put(n.id, n);
         }
-        for(int i = 0; i < outputs; ++i) {
+        for(int i = 0; i < builder.outputs; ++i) {
             final Node n = new Node(cache.nextNodeID(), NodeType.OUTPUT);
             nodeGenes.put(n.id, n);
         }
@@ -64,11 +65,11 @@ class DirectEncoding extends Genome {
 
 
     /**
-     * Make a deep copy of another DirectEncoding.
+     * Make a deep copy of another GraphEncoding.
      *
-     * @param other DirectEncoding to copy.
+     * @param other GraphEncoding to copy.
      */
-    DirectEncoding(DirectEncoding other) {
+    private GraphEncoding(GraphEncoding other) {
         for(Node n : other.nodeGenes.values())
             nodeGenes.put(n.id, new Node(n));
         for(Edge e : other.edgeGenes.values())
@@ -77,10 +78,10 @@ class DirectEncoding extends Genome {
 
 
     /**
-     * Used to create a new, empty DirectEncoding. If this is used, make sure to initialize the list
+     * Used to create a new, empty GraphEncoding. If this is used, make sure to initialize the list
      * of nodes to include at minimum the input and output nodes.
      */
-    private DirectEncoding() {
+    private GraphEncoding() {
     }
 
 
@@ -89,97 +90,10 @@ class DirectEncoding extends Genome {
      *
      * @param nodes The nodes to copy from.
      */
-    private DirectEncoding(Collection<Node> nodes) {
+    private GraphEncoding(Collection<Node> nodes) {
         for(Node n : nodes)
             if(n.nodeType == NodeType.INPUT || n.nodeType == NodeType.OUTPUT)
                 nodeGenes.put(n.id, new Node(n));
-    }
-
-
-    /**
-     * Cross the genomes of two parents to create a child. This will take the disjoint and excess genes from the most
-     * fit parent and randomly choose between the matching ones.
-     *
-     * @param cache Cached information about the nodes and edges.
-     * @param p1    First parent.
-     * @param p2    Second parent.
-     * @return A child which is the result of crossing the genomes
-     */
-    public static DirectEncoding crossMultipoint(DirectEncodingCache cache, DirectEncoding p1, DirectEncoding p2, boolean average) {
-        //make p1 the most fit parent, or if equal, the one with the least genes
-        if(p1.getFitness() < p2.getFitness() || (p1.getFitness() == p2.getFitness() &&
-                p1.edgeGenes.size() + p1.nodeGenes.size() >
-                p2.edgeGenes.size() + p2.nodeGenes.size()) )
-        {
-            DirectEncoding t = p1;
-            p1 = p2;
-            p2 = t;
-        }
-
-        //go through both parents and line up innovation numbers
-        // always sorted because it is a TreeSet
-        DirectEncoding child = new DirectEncoding();
-        Iterator<Edge> i1 = p1.edgeGenes.values().iterator();
-        Iterator<Edge> i2 = p2.edgeGenes.values().iterator();
-
-        Edge e1 = i1.hasNext() ? i1.next() : null;
-        Edge e2 = i2.hasNext() ? i2.next() : null;
-        while(e1 != null || e2 != null) { //run until we hit the end of both lists
-            boolean step1 = false, step2 = false;
-            //get the next node, or null if we have reached the end.
-            if(e1 != null && e2 == null) { //e1 is an excess node
-                child.edgeGenes.put(e1.id, new Edge(e1));
-                step1 = true;
-            }
-            else if(e1 == null && e2 != null) { //e2 is an excess node
-                step2 = true;
-            }
-            else if(e1.id < e2.id) { //e1 is a disjoint node
-                child.edgeGenes.put(e1.id, new Edge(e1));
-                step1 = true;
-            }
-            else if(e1.id == e2.id) {
-                //choose either randomly from the parents or average the weight
-                Edge edge = average ?
-                        new Edge(e1.id, e1.fromNode, e1.toNode, (e1.weight + e2.weight) / 2.0f) :
-                        new Edge(iWill(0.5f) ? e1 : e2);
-
-                //chance to disable child if either parent is disabled
-                if(!e1.enabled || !e2.enabled)
-                    if(iWill(CROSS_DISABLE_EDGE))
-                        edge.enabled = false;
-
-                //add the new edge to the list
-                child.edgeGenes.put(edge.id, edge);
-                step1 = step2 = true;
-            }
-            else { // e1.id > e2.id //e2 is a disjoint node
-                step2 = true;
-            }
-
-            if(step1) e1 = i1.hasNext() ? i1.next() : null;
-            if(step2) e2 = i2.hasNext() ? i2.next() : null;
-        }
-
-        //Find what nodes are used
-        BitSet discovered = new BitSet();
-        for(Edge e : child.edgeGenes.values()) {
-            discovered.set(e.toNode);
-            discovered.set(e.fromNode);
-        }
-
-        //add nodes which are used by the child from either parent (must go through both lists)
-        // we make the assumption that both have the same input and output nodes, so just copy
-        // from the first parent.
-        for(int i = discovered.nextSetBit(0); i >= 0; i = discovered.nextSetBit(i+1)) {
-            Node n = p1.nodeGenes.get(i);
-            if(n == null) n = p2.nodeGenes.get(i);
-            if(n == null) throw new IllegalArgumentException("In DirectEncoding crossMultipoint, one of the parents " +
-                    "had an edge for which it did not have the corresponding nodes.");
-            child.nodeGenes.put(n.id, new Node(n));
-        }
-
-        return child;
     }
 
 
@@ -191,7 +105,7 @@ class DirectEncoding extends Genome {
      * @param d2 Second genome.
      * @return The compatibility distance.
      */
-    public static float compatibilityDistance(DirectEncoding d1, DirectEncoding d2) {
+    public static float compatibilityDistance(GraphEncoding d1, GraphEncoding d2) {
         //go through both parents and line up innovation numbers
         // always sorted because it is a TreeSet
         Iterator<Edge> i1 = d1.edgeGenes.values().iterator();
@@ -242,26 +156,87 @@ class DirectEncoding extends Genome {
      * fit parent and randomly choose between the matching ones.
      *
      * @param cache Cached information about the nodes and edges.
-     * @param other The other parent.
+     * @param p1f   First parent fitness.
+     * @param gp2   Second parent.
+     * @param p2f   Second parent fitness.
      * @return A child which is the result of crossing the genomes
      */
     @Override
-    public DirectEncoding crossMultipoint(GenomeCache cache, Genome other) {
-        return crossMultipoint((DirectEncodingCache) cache, this, (DirectEncoding) other, false);
-    }
+    public GraphEncoding crossMultipoint(GenomeCache cache, final float p1f, Genome gp2,
+                                         final float p2f, final boolean average) {
+        GraphEncoding p1 = this;
+        GraphEncoding p2 = (GraphEncoding) gp2;
 
+        //make p1 the most fit parent, or if equal, the one with the least genes
+        if((p1f < p2f) ||
+                (p1f == p2f &&
+                        p1.edgeGenes.size() + p1.nodeGenes.size() >
+                                p2.edgeGenes.size() + p2.nodeGenes.size())) {
+            GraphEncoding t = p1;
+            p1 = p2;
+            p2 = t;
+        }
 
-    /**
-     * Cross the genomes of two parents to create a child. This will take the disjoint and excess genes from the most
-     * fit parent and average the values of the matching ones.
-     *
-     * @param cache Cached information about the genome.
-     * @param other The other parent.
-     * @return A child which is the result of crossing the genomes
-     */
-    @Override
-    Genome crossMultipointAvg(GenomeCache cache, Genome other) {
-        return crossMultipoint((DirectEncodingCache) cache, this, (DirectEncoding) other, true);
+        //go through both parents and line up innovation numbers
+        // always sorted because it is a TreeSet
+        GraphEncoding child = new GraphEncoding();
+        Iterator<Edge> i1 = p1.edgeGenes.values().iterator();
+        Iterator<Edge> i2 = p2.edgeGenes.values().iterator();
+
+        Edge e1 = i1.hasNext() ? i1.next() : null;
+        Edge e2 = i2.hasNext() ? i2.next() : null;
+        while(e1 != null || e2 != null) { //run until we hit the end of both lists
+            boolean step1 = false, step2 = false;
+            //get the next node, or null if we have reached the end.
+            if(e1 != null && e2 == null) { //e1 is an excess node
+                child.edgeGenes.put(e1.id, new Edge(e1));
+                step1 = true;
+            } else if(e1 == null && e2 != null) { //e2 is an excess node
+                step2 = true;
+            } else if(e1.id < e2.id) { //e1 is a disjoint node
+                child.edgeGenes.put(e1.id, new Edge(e1));
+                step1 = true;
+            } else if(e1.id == e2.id) {
+                //choose either randomly from the parents or average the weight
+                Edge edge = average ?
+                        new Edge(e1.id, e1.fromNode, e1.toNode, (e1.weight + e2.weight) / 2.0f) :
+                        new Edge(iWill(0.5f) ? e1 : e2);
+
+                //chance to disable child if either parent is disabled
+                if(!e1.enabled || !e2.enabled)
+                    if(iWill(CROSS_DISABLE_EDGE))
+                        edge.enabled = false;
+
+                //add the new edge to the list
+                child.edgeGenes.put(edge.id, edge);
+                step1 = step2 = true;
+            } else { // e1.id > e2.id //e2 is a disjoint node
+                step2 = true;
+            }
+
+            if(step1) e1 = i1.hasNext() ? i1.next() : null;
+            if(step2) e2 = i2.hasNext() ? i2.next() : null;
+        }
+
+        //Find what nodes are used
+        BitSet discovered = new BitSet();
+        for(Edge e : child.edgeGenes.values()) {
+            discovered.set(e.toNode);
+            discovered.set(e.fromNode);
+        }
+
+        //add nodes which are used by the child from either parent (must go through both lists)
+        // we make the assumption that both have the same input and output nodes, so just copy
+        // from the first parent.
+        for(int i = discovered.nextSetBit(0); i >= 0; i = discovered.nextSetBit(i + 1)) {
+            Node n = p1.nodeGenes.get(i);
+            if(n == null) n = p2.nodeGenes.get(i);
+            if(n == null) throw new IllegalArgumentException("In GraphEncoding crossMultipoint, one of the parents " +
+                    "had an edge for which it did not have the corresponding nodes.");
+            child.nodeGenes.put(n.id, new Node(n));
+        }
+
+        return child;
     }
 
 
@@ -274,7 +249,7 @@ class DirectEncoding extends Genome {
      */
     @Override
     public float compatibilityDistance(Genome gOther) {
-        return compatibilityDistance(this, (DirectEncoding) gOther);
+        return compatibilityDistance(this, (GraphEncoding) gOther);
     }
 
 
@@ -287,7 +262,7 @@ class DirectEncoding extends Genome {
      */
     @Override
     public void initialize(GenomeCache gCache) {
-        DirectEncodingCache cache = (DirectEncodingCache) gCache;
+        GraphEncodingCache cache = (GraphEncodingCache) gCache;
         //create an edge from every input to every output
         for(Node from : nodeGenes.values()) {
             for(Node to : nodeGenes.values()) {
@@ -304,19 +279,19 @@ class DirectEncoding extends Genome {
      * @return A duplicate of the current instance.
      */
     @Override
-    public DirectEncoding duplicate() {
-        return new DirectEncoding(this);
+    public GraphEncoding duplicate() {
+        return new GraphEncoding(this);
     }
 
 
     /**
-     * Used to create a new DirectEncoding Cache.
+     * Used to create a new GraphEncoding Cache.
      *
-     * @return A new DirectEncoding Cache.
+     * @return A new GraphEncoding Cache.
      */
     @Override
     public GenomeCache createCache() {
-        return new DirectEncodingCache();
+        return new GraphEncodingCache();
     }
 
 
@@ -328,16 +303,14 @@ class DirectEncoding extends Genome {
      */
     @Override
     public void mutate(GenomeCache gCache) {
-        DirectEncodingCache cache = (DirectEncodingCache) gCache;
+        GraphEncodingCache cache = (GraphEncodingCache) gCache;
 
         //Perform structural mutations first
         if(iWill(MUTATE_NEW_NODE)) {
             mutateNode(cache);
-        }
-        else if(iWill(MUTATE_NEW_EDGE)) {
+        } else if(iWill(MUTATE_NEW_EDGE)) {
             mutateEdge(cache);
-        }
-        else { //perform non-structural modifications
+        } else { //perform non-structural modifications
             //TODO: add traits (including activation function)
 
             if(iWill(MUTATE_EDGE_WEIGHTS))
@@ -361,9 +334,10 @@ class DirectEncoding extends Genome {
 
     /**
      * Mutates a new node along a random edge.
+     *
      * @param cache
      */
-    private void mutateNode(DirectEncodingCache cache) {
+    private void mutateNode(GraphEncodingCache cache) {
         final int index = getRandomNum(0, edgeGenes.size() - 1);
         final int edge = edgeIndexToID(index);
         addNode(cache, edge);
@@ -375,7 +349,7 @@ class DirectEncoding extends Genome {
      *
      * @param cache Cached information about the nodes and edges.
      */
-    private void mutateEdge(DirectEncodingCache cache) {
+    private void mutateEdge(GraphEncodingCache cache) {
         for(int x = 0; x < MUTATE_NEW_EDGE_TRIES; ++x) {
             int from, to;
             do {
@@ -419,6 +393,7 @@ class DirectEncoding extends Genome {
     /**
      * Perform DFS to check if the graph is cyclic given an extra edge not in the edge list. This will consider a
      * connection to an input node as recurrent.
+     *
      * @param node  ID of the current node.
      * @param from  ID of the starting node for then new edge.
      * @param to    ID of the ending node for the new edge.
@@ -482,7 +457,7 @@ class DirectEncoding extends Genome {
      * @param nodeTo   Termination node for the edge.
      * @return True if the Edge was added successfully.
      */
-    private boolean addEdge(DirectEncodingCache cache, int nodeFrom, int nodeTo) {
+    private boolean addEdge(GraphEncodingCache cache, int nodeFrom, int nodeTo) {
         //check if the edge already exists
         for(Edge e : edgeGenes.values())
             if(e.fromNode == nodeFrom && e.toNode == nodeTo)
@@ -508,9 +483,9 @@ class DirectEncoding extends Genome {
      * nodes of the edge, and then disable the edge. Thus making the change as minimal as possible.
      *
      * @param cache Cached information about the nodes and edges.
-     * @param edge The edge along which to add a node.
+     * @param edge  The edge along which to add a node.
      */
-    private void addNode(DirectEncodingCache cache, int edge) {
+    private void addNode(GraphEncodingCache cache, int edge) {
         Edge oldEdge = edgeGenes.get(edge);
         oldEdge.enabled = false;
 
@@ -536,6 +511,7 @@ class DirectEncoding extends Genome {
 
     /**
      * Get the nth edge from edge genes.
+     *
      * @param index Index from edgeGenes to get the ID of.
      * @return ID of the edge at index.
      */
@@ -549,6 +525,7 @@ class DirectEncoding extends Genome {
 
     /**
      * Get the nth node from node genes.
+     *
      * @param index Index from nodeGenes to get the ID of.
      * @return ID of the node at index.
      */
@@ -566,7 +543,7 @@ class DirectEncoding extends Genome {
      * @return The ANN represented by the genome.
      */
     @Override
-    public NeuralNetwork getANN() {
+    public NeuralNetwork constructNeuralNetwork() {
         //TODO: use modified sigmoid function described in paper?
         //create lists of each type of node
         Map<Integer, Integer> nodes = new HashMap<>(nodeGenes.size()); //Map the node ID to the ANN Index
@@ -595,7 +572,7 @@ class DirectEncoding extends Genome {
                 nodes.put(n.id, count++);
 
         //construct a neural network now that we know the sizes
-        NeuralNetwork.Builder net = new NeuralNetwork.Builder()
+        CPPN.Builder net = new CPPN.Builder()
                 .inputs(inputs)
                 .outputs(outputs)
                 .hidden(hidden);

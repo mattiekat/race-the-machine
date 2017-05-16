@@ -1,4 +1,4 @@
-package plu.teamtwo.rtm.neat;
+package plu.teamtwo.rtm.genome.graph;
 
 enum NodeType {
     INPUT, OUTPUT, HIDDEN;

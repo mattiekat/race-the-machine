@@ -3,6 +3,9 @@ package plu.teamtwo.rtm.neat;
 import com.google.gson.Gson;
 import com.google.gson.stream.JsonReader;
 import com.google.gson.stream.JsonWriter;
+import plu.teamtwo.rtm.genome.GenomeBuilder;
+import plu.teamtwo.rtm.genome.GenomeCache;
+import plu.teamtwo.rtm.genome.graph.GraphEncoding;
 import plu.teamtwo.rtm.neural.NeuralNetwork;
 
 import java.io.*;
@@ -12,11 +15,11 @@ import java.util.*;
 import static plu.teamtwo.rtm.core.util.Rand.*;
 
 /**
- * The over-arching controller for the NEAT algorithm. Note that this is not designed to be called from multiple
+ * The over-arching controller for the GA algorithms. Note that this is not designed to be called from multiple
  * threads and may break up tasks internally.
- * TODO: create a population class and keep only high-level logic in NEATController
+ * TODO: create a population class and keep only high-level logic in GAController
  */
-public class NEATController {
+public class GAController {
     /// Size of the total population.
     private static final int POPULATION_SIZE = 64;
     /// Number of generations a species can show no improvement before being removed.
@@ -37,9 +40,7 @@ public class NEATController {
     /// Desired number of species.
     private static final int TARGET_NUMBER_OF_SPECIES = 5;
 
-    public final Encoding encoding;
-    private final int inputs;
-    private final int outputs;
+    private final GenomeBuilder genomeSpecs;
     private GenomeCache cache;
     private int generationNum;
     private int nextSpeciesID;
@@ -51,13 +52,8 @@ public class NEATController {
 
 
     //TODO: take parameter settings
-    public NEATController(Encoding encoding, int inputs, int outputs) {
-        if(inputs <= 0 || outputs <= 0)
-            throw new InvalidParameterException("The number of inputs and outputs must be greater than 0.");
-
-        this.encoding = encoding;
-        this.inputs = inputs;
-        this.outputs = outputs;
+    public GAController(GenomeBuilder genomeSpecs) {
+        this.genomeSpecs = genomeSpecs;
         this.cache = null;
         this.generationNum = 0;
         this.nextSpeciesID = 0;
@@ -67,40 +63,40 @@ public class NEATController {
 
 
     /**
-     * Read a NEATController from a JSON stream. This will create a new NEATController with the information of the
+     * Read a GAController from a JSON stream. This will create a new GAController with the information of the
      * most recent generation in the JSON stream.
      *
-     * @param inputStream A stream of JSON representing a NEATController.
-     * @return A NEATController initialized to the latest generation in the JSON archive.
+     * @param inputStream A stream of JSON representing a GAController.
+     * @return A GAController initialized to the latest generation in the JSON archive.
      */
-    public static NEATController readFromStream(InputStream inputStream) throws IOException {
+    public static GAController readFromStream(InputStream inputStream) throws IOException {
         JsonReader reader = new JsonReader(new InputStreamReader(inputStream, "UTF-8"));
         Gson gson = new Gson();
-        NEATController controller = gson.fromJson(reader, NEATController.class);
+        GAController controller = gson.fromJson(reader, GAController.class);
         reader.close();
         return controller;
     }
 
 
     /**
-     * Write a NEATController to an output stream. This will save all the information about the current generation and
+     * Write a GAController to an output stream. This will save all the information about the current generation and
      * other information about the current controller state.
      *
      * @param outputStream A stream to output the JSON to.
      */
-    public static void writeToStream(NEATController controller, OutputStream outputStream) throws IOException {
+    public static void writeToStream(GAController controller, OutputStream outputStream) throws IOException {
         controller.sortByFitness();
 
         Gson gson = new Gson();
         JsonWriter writer = new JsonWriter(new OutputStreamWriter(outputStream, "UTF-8"));
         writer.setIndent("  ");
-        gson.toJson(controller, NEATController.class, writer);
+        gson.toJson(controller, GAController.class, writer);
         writer.close();
     }
 
 
     /**
-     * Setup autosave (or disable it). If enabled, the NEATController will save its current state to a file before
+     * Setup autosave (or disable it). If enabled, the GAController will save its current state to a file before
      * creating the next generation (preserving historical information). If this throws an exception, auto-saves will
      * be disabled until it is called again without errors.
      *
@@ -123,21 +119,17 @@ public class NEATController {
      */
     public void createFirstGeneration() {
         //TODO: switch to creating a fully connected input-output system as the paper describes?
-        Genome base = null;
+        Individual base = null;
         sorted = false;
 
-        switch(encoding) {
-            case DIRECT_ENCODING:
-                cache = new DirectEncodingCache();
-                base = new DirectEncoding(cache, inputs, outputs);
-                break;
-        }
+        cache = genomeSpecs.createCache();
+        base = new Individual(genomeSpecs.create(cache));
 
         for(int x = 0; x < POPULATION_SIZE; ++x) {
-            Genome g = base.duplicate();
-            g.initialize(cache);
-            g.mutate(cache);
-            addGenome(generation, g, -1);
+            Individual i = new Individual(base);
+            i.genome.initialize(cache);
+            i.genome.mutate(cache);
+            addIndividual(generation, i, -1);
         }
     }
 
@@ -146,7 +138,7 @@ public class NEATController {
      * Asses the fitness of all the members of the current generation.
      *
      * @param scoringFunction Method by which to asses how well the individuals perform.
-     * @return Returns true if this generation contains a genome which is accepted as a solution.
+     * @return Returns true if this generation contains an individual which is accepted as a solution.
      */
     public boolean assesGeneration(ScoringFunction scoringFunction) {
         boolean foundWinner = false;
@@ -162,11 +154,11 @@ public class NEATController {
 
         //submit tasks to be run
         for(Species s : generation) {
-            for(Genome g : s) {
-                //threadPool.submit(new GenomeProcessor(g, scoringFunction.createNew()));
-                GenomeProcessor p = new GenomeProcessor(g, scoringFunction);
+            for(Individual i : s) {
+                //threadPool.submit(new ScoreSystem(i, scoringFunction.createNew()));
+                ScoreSystem p = new ScoreSystem(i, scoringFunction);
                 p.run();
-                foundWinner = g.isWinner() | foundWinner;
+                foundWinner = i.isWinner() | foundWinner;
                 scoringFunction = scoringFunction.createNew();
             }
         }
@@ -290,18 +282,18 @@ public class NEATController {
 
 
     /**
-     * Add a genome to the species it belongs to (will find out which one that is), or create a new species if it is not
-     * compatible with any of the existing ones.
+     * Add an individual to the species it belongs to (will find out which one that is), or create a new species if it
+     * is not compatible with any of the existing ones.
      *
-     * @param species A list of species to attempt adding the genome to.
-     * @param genome The genome to add.
-     * @param parentSpeciesID ID of the parent species should this need to add a new species for the genome.
+     * @param species A list of species to attempt adding the individual to.
+     * @param individual The individual to add.
+     * @param parentSpeciesID ID of the parent species should this need to add a new species for the individual.
      */
-    private void addGenome(List<Species> species, Genome genome, int parentSpeciesID) {
+    private void addIndividual(List<Species> species, Individual individual, int parentSpeciesID) {
         for(Species s : species)
-            if(s.add(genome)) return;
+            if(s.add(individual)) return;
 
-        species.add(new Species(nextSpeciesID++, parentSpeciesID, generationNum, genome));
+        species.add(new Species(nextSpeciesID++, parentSpeciesID, generationNum, individual));
     }
 
 
@@ -339,7 +331,7 @@ public class NEATController {
 
         //will we protect the leader
         if(offspring >= SPECIES_SIZE_TO_PROTECT_LEADER) {
-            addGenome(newSpeciesList, species.getChampion().duplicate(), species.speciesID);
+            addIndividual(newSpeciesList, new Individual(species.getChampion()), species.speciesID);
             offspring--;
         }
 
@@ -350,12 +342,12 @@ public class NEATController {
 
         //create the children
         while(offspring-- > 0) {
-            Genome child = null;
+            Individual child = null;
 
             if(species.size() > 1 && iWill(BREEDING_CROSSOVER_RATE)) { //use crossover on two random individuals
                 //select parents
                 int i1 = getRandomNum(0, species.size() - 1), i2 = 0;
-                Genome p1 = species.getNthMostFit(i1), p2;
+                Individual p1 = species.getNthMostFit(i1), p2;
 
                 if(iWill(INTERSPECIES_MATING_RATE)) { //mate outside species
                     int s = 0, tries = 5;
@@ -375,14 +367,14 @@ public class NEATController {
 
                 //determine if we will mutate the child's genome, do this at random or always if parents are the same
                 if(iWill(BREEDING_CROSSOVER_RATE) || p1.compatibilityDistance(p2) == 0.0f)
-                    child.mutate(cache);
+                    child.genome.mutate(cache);
             }
             else { //copy and mutate
                 int i = getRandomNum(0, species.size() - 1);
-                child = species.getNthMostFit(i).duplicate();
-                child.mutate(cache);
+                child = new Individual(species.getNthMostFit(i));
+                child.genome.mutate(cache);
             }
-            addGenome(newSpeciesList, child, species.speciesID);
+            addIndividual(newSpeciesList, child, species.speciesID);
         }
 
         newSpeciesList.removeIf(s -> s.size() <= 0);
@@ -394,11 +386,11 @@ public class NEATController {
      * Get the best individual in the current generation.
      * @return The best individual in the current generation.
      */
-    public Genome getBestIndividual() {
+    public Individual getBestIndividual() {
         sortByFitness();
-        Genome best = generation.get(0).getChampion();
+        Individual best = generation.get(0).getChampion();
         for(int i = 1; i < generation.size(); ++i) {
-            Genome other = generation.get(i).getChampion();
+            Individual other = generation.get(i).getChampion();
             best = best.getFitness() > other.getFitness() ? best : other;
         }
         return best;
@@ -408,20 +400,20 @@ public class NEATController {
     /**
      * A runnable task which will compute the fitness of a Genome using a ScoringFunction.
      */
-    private static class GenomeProcessor implements Runnable {
-        private final Genome genome;
+    private static class ScoreSystem implements Runnable {
+        private final Individual individual;
         private final ScoringFunction scoringFunction;
 
 
-        GenomeProcessor(Genome genome, ScoringFunction scoringFunction) {
-            this.genome = genome;
+        ScoreSystem(Individual individual, ScoringFunction scoringFunction) {
+            this.individual = individual;
             this.scoringFunction = scoringFunction;
         }
 
 
         @Override
         public void run() {
-            NeuralNetwork network = genome.getANN();
+            NeuralNetwork network = individual.genome.constructNeuralNetwork();
             final boolean flushBetween = scoringFunction.flushBetween();
 
             float[] input;
@@ -431,8 +423,8 @@ public class NEATController {
                 scoringFunction.acceptOutput(output);
             }
 
-            genome.setFitness((float)scoringFunction.getScore());
-            if(scoringFunction.isWinner()) genome.setWinner();
+            individual.setFitness((float)scoringFunction.getScore());
+            if(scoringFunction.isWinner()) individual.setWinner();
         }
     }
 }
