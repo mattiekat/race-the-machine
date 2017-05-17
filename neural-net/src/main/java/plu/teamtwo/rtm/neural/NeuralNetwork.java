@@ -46,4 +46,18 @@ public interface NeuralNetwork {
      * @return True if it is a recurrent neural network.
      */
     boolean isRecurrent();
+
+    /**
+     * Get the number of inputs the network expects to receive.
+     *
+     * @return Number of expected inputs.
+     */
+    int inputs();
+
+    /**
+     * Get the number of outputs the network will produced when calculate or step is called.
+     *
+     * @return Number of outputs produced by the network.
+     */
+    int outputs();
 }

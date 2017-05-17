@@ -165,4 +165,26 @@ public class SubstrateNetwork implements NeuralNetwork {
     public boolean isRecurrent() {
         return false;
     }
+
+
+    /**
+     * Get the number of inputs the network expects to receive.
+     *
+     * @return Number of expected inputs.
+     */
+    @Override
+    public int inputs() {
+        return layerSizes[0];
+    }
+
+
+    /**
+     * Get the number of outputs the network will produced when calculate or step is called.
+     *
+     * @return Number of outputs produced by the network.
+     */
+    @Override
+    public int outputs() {
+        return layerSizes[layerSizes.length - 1];
+    }
 }
