@@ -1,7 +1,5 @@
 package plu.teamtwo.rtm.neural;
 
-import java.util.LinkedList;
-
 public class SubstrateNetworkBuilder implements NeuralNetworkBuilder {
     /// Defines the dimensions of each layer, e.g. d[0] = [2, 3] would define an input of 2 by 3 (output is final layer)
     ///  this also defines the mapping of the input arrays to the first substrate and so on.

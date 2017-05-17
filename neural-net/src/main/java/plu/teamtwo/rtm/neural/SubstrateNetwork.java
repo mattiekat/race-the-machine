@@ -1,7 +1,6 @@
 package plu.teamtwo.rtm.neural;
 
 import java.security.InvalidParameterException;
-import java.util.Arrays;
 
 /**
  * Represents a substrate network which has only a few outputs at definable coordinates.

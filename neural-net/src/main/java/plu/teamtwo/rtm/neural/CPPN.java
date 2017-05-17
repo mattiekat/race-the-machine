@@ -3,7 +3,9 @@ package plu.teamtwo.rtm.neural;
 import plu.teamtwo.rtm.core.util.Pair;
 
 import java.security.InvalidParameterException;
-import java.util.*;
+import java.util.BitSet;
+import java.util.LinkedList;
+import java.util.Queue;
 
 public class CPPN implements NeuralNetwork {
     private static final ActivationFunction DEFAULT_ACTIVATION_FUNCTION = ActivationFunction.TANH;

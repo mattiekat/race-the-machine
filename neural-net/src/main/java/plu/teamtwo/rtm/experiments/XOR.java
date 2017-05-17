@@ -3,7 +3,9 @@ package plu.teamtwo.rtm.experiments;
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
 import plu.teamtwo.rtm.genome.graph.GraphEncodingBuilder;
-import plu.teamtwo.rtm.neat.*;
+import plu.teamtwo.rtm.neat.GAController;
+import plu.teamtwo.rtm.neat.Individual;
+import plu.teamtwo.rtm.neat.ScoringFunction;
 import plu.teamtwo.rtm.neural.ActivationFunction;
 
 import java.io.FileDescriptor;

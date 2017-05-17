@@ -5,7 +5,6 @@ import com.google.gson.stream.JsonReader;
 import com.google.gson.stream.JsonWriter;
 import plu.teamtwo.rtm.genome.GenomeBuilder;
 import plu.teamtwo.rtm.genome.GenomeCache;
-import plu.teamtwo.rtm.genome.graph.GraphEncoding;
 import plu.teamtwo.rtm.neural.NeuralNetwork;
 
 import java.io.*;
