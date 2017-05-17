@@ -65,11 +65,11 @@ public class MultilayerSubstrateEncoding implements Genome {
         final int inputs = maxTransDimen + 1; // add a bias node
         final int outputs = (layers.length - 1) * 2; //multiply by two for LEO extension
         GraphEncodingBuilder cppnBuilder = new GraphEncodingBuilder()
-                                                   .inputs(inputs)
-                                                   .outputs(outputs)
-                                                   .randomActivations()
-                                                   .inputFunction(ActivationFunction.LINEAR)
-                                                   .outputFunction(ActivationFunction.SIGMOID);
+                .inputs(inputs)
+                .outputs(outputs)
+                .randomActivations()
+                .inputFunction(ActivationFunction.LINEAR)
+                .outputFunction(ActivationFunction.SIGMOID);
 
         seedLEO(cppnBuilder, layers, inputs, outputs);
         connectInputs(cppnBuilder, layers, inputs, outputs);
@@ -106,6 +106,36 @@ public class MultilayerSubstrateEncoding implements Genome {
         inputFunction = other.inputFunction;
         outputFunction = other.outputFunction;
         hiddenFunction = other.hiddenFunction;
+    }
+
+
+    /**
+     * Calculate the products needed for each dimension using dynamic programming.
+     * i.e. Let each Xi be the product of all Dj dimension sizes where n > j > i.
+     * <p>
+     * Use this for calculating the index of a n-dimensional point in a vector. Take the point (1, 2, 3) in 3D space,
+     * you would want to multiply 1 by the maximum size of the second two dimensions, and 2 by the maximum size of the
+     * third dimension, and finally add the value 3 because it is the lowest order dimension. Thus let the result of
+     * this function be P, and the correct index would be 1*p[0] + 2*p[2] + 3*p[3].
+     *
+     * @param d       Array of dimensions where d[0] is the highest order dimension and d[n-1] is the lowest order
+     * @param inplace Calculate the values in-place, otherwise makes a copy first.
+     * @return An array such that each Pi is the product of all Dj where i < j < n.
+     */
+    private static int[] calculateMappingProducts(int[] d, boolean inplace) {
+        int[] p = inplace ? d : Arrays.copyOf(d, d.length);
+
+        //calculate from the rear to make use of past calculations
+        int last = p[p.length - 1];
+        p[p.length - 1] = 1;
+
+        for(int i = p.length - 2; i >= 0; --i) {
+            int saved = p[i];
+            p[i] = last * p[i + 1];
+            last = saved;
+        }
+
+        return p;
     }
 
 
@@ -178,6 +208,50 @@ public class MultilayerSubstrateEncoding implements Genome {
         }
 
         return builder;
+    }
+
+
+    /**
+     * Map the position p in the 1D combined space to its n-dimensional normalized value. This converts the 1D point to
+     * an array of floats, each value in the array representing its normalized position in that dimension. The positon
+     * is normalized to a value between -1 and 1, but is offset slightly such that in a dimension of size two it would
+     * not end up being at both extrema.
+     *
+     * @param p The position/index in 1D combined space.
+     * @param D The dimension bounds the point exists in.
+     * @param M The pre-calculated mapping information, each Mi is the product of all Dj where i < j < n
+     * @return The normalized position across all dimensions.
+     */
+    private static float[] mapPosition(int p, int[] D, int[] M) {
+        // Logic/Demonstration of concept
+        // We calculate a point's 1D position by
+        //  sum(P[i] * M[i]) = position in 1D
+        //  P[0] * X + P[1] * Y + P[2] * Z
+        //
+        // So we can calculate its n-D position by
+        //  ( (( 0  1)( 2  3)( 4  5))  (( 6  7)( 8  9)(10 11)) )
+        //  D = [2, 3, 2]
+        //  M = [6, 2, 1]
+        //  x = (1, 1, 0) -> 8
+        //  x / M[0] = 1    r = x % M[0] = 2
+        //  r / M[1] = 1    r = r % M[1] = 0
+        //  r / M[2] = 0    r = r % M[2] = 0
+
+        float[] pos = new float[D.length];
+        //for each dimension, calculate the normalized position in that dimension
+        for(int i = 0; i < D.length; ++i) {
+            final int x = p / M[i];
+            p %= M[i];
+
+            //x is going to be in [0, D[i]), so we can just add 1/2 the distance between points and it will be shifted
+            // slightly preventing the problem where a dimension of size 2 ends up as 0 or 1, instead it will be 0.25
+            // and 0.75
+            final float v = ((float) x / (float) D[i]) + (0.5f / (float) D[i]);
+            //take the value of where it is and map it to (-1, 1)
+            pos[i] = (v * 2.0f) - 1.0f;
+        }
+
+        return pos;
     }
 
 
@@ -291,8 +365,8 @@ public class MultilayerSubstrateEncoding implements Genome {
                 //for all inputs, calculate the weight to the output
                 for(int in = 0; in < inputLayerSize; ++in) {
                     //normalize the input and output coordinates to a value between -1 and 1 for all dimensions
-                    final float[] inpos = mapPosition(inputDimensions, in);
-                    final float[] outpos = mapPosition(outputDimensions, out);
+                    final float[] inpos = mapPosition(in, inputDimensions, mappingProducts[layer]);
+                    final float[] outpos = mapPosition(out, outputDimensions, mappingProducts[layer]);
 
                     //make sure we did not do a dumb since the copy may prevent errors from being pronounced
                     if(inpos.length != inputDimensions.length)
@@ -320,53 +394,11 @@ public class MultilayerSubstrateEncoding implements Genome {
 
         //build the new network
         return new SubstrateNetworkBuilder()
-                       .inputFunction(inputFunction)
-                       .outputFunction(outputFunction)
-                       .hiddenFunction(hiddenFunction)
-                       .layers(layers)
-                       .weights(weights)
-                       .create();
-    }
-
-
-    /**
-     *
-     * @param dimensions
-     * @param p
-     * @return
-     */
-    private float[] mapPosition(int[] dimensions, int p) {
-        //TODO: map the positions from 1D vector to n-dimensional space and normalize each coordinate to be between -1 and 1
-        return null;
-    }
-
-
-    /**
-     * Calculate the products needed for each dimension using dynamic programming.
-     * i.e. Let each Xi be the product of all Dj dimension sizes where n > j > i.
-     * <p>
-     * Use this for calculating the index of a n-dimensional point in a vector. Take the point (1, 2, 3) in 3D space,
-     * you would want to multiply 1 by the maximum size of the second two dimensions, and 2 by the maximum size of the
-     * third dimension, and finally add the value 3 because it is the lowest order dimension. Thus let the result of
-     * this function be P, and the correct index would be 1*p[0] + 2*p[2] + 3*p[3].
-     *
-     * @param d       Array of dimensions where d[0] is the highest order dimension and d[n-1] is the lowest order
-     * @param inplace Calculate the values in-place, otherwise makes a copy first.
-     * @return An array such that each Pi is the product of all Dj where i < j < n.
-     */
-    private static int[] calculateMappingProducts(int[] d, boolean inplace) {
-        int[] p = inplace ? d : Arrays.copyOf(d, d.length);
-
-        //calculate from the rear to make use of past calculations
-        int last = p[p.length - 1];
-        p[p.length - 1] = 1;
-
-        for(int i = p.length - 2; i >= 0; --i) {
-            int saved = p[i];
-            p[i] = last * p[i + 1];
-            last = saved;
-        }
-
-        return p;
+                .inputFunction(inputFunction)
+                .outputFunction(outputFunction)
+                .hiddenFunction(hiddenFunction)
+                .layers(layers)
+                .weights(weights)
+                .create();
     }
 }
