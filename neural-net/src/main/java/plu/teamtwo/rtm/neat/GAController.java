@@ -126,7 +126,6 @@ public class GAController {
 
         for(int x = 0; x < POPULATION_SIZE; ++x) {
             Individual i = new Individual(base);
-            i.genome.initialize(cache);
             i.genome.mutate(cache);
             addIndividual(generation, i, -1);
         }

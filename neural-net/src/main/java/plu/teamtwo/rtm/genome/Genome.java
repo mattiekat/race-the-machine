@@ -34,16 +34,6 @@ public interface Genome {
 
 
     /**
-     * Used for initial members of the first generation to create connections between the inputs and outputs. This
-     * should not be needed after the first generation. It is recommended that mutate be called after this function to
-     * give the initial species some variation.
-     *
-     * @param cache Cached information about the Genome.
-     */
-    abstract void initialize(GenomeCache cache);
-
-
-    /**
      * Create a deep copy of the genome. This will enable the copy to be modified without altering the original.
      *
      * @return A duplicate of the current instance.
