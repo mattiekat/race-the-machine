@@ -11,8 +11,8 @@ public class SubstrateNetwork implements NeuralNetwork {
     private final int[][] layers;
 
     /// Defines weights between substrates (e.g. weights[0] defines a weight matrix between input and next substrate).
-    ///  Stored as (x2, y2, ..., x1, y1, ...), i.e. (output, input)
-    private final float[][] weights;
+    ///  Stored as weights[layer][output][input]
+    private final float[][][] weights;
 
     /// Product of each layer's dimensions
     private final transient int[] layerSizes;
@@ -43,9 +43,13 @@ public class SubstrateNetwork implements NeuralNetwork {
 
         layerSizes = calculateLayerSizes(layers);
 
-        for(int i = 0; i < weights.length; ++i)
-            if(weights[i].length != layerSizes[i] * layerSizes[i + 1])
+        for(int layer = 0; layer < weights.length; ++layer) {
+            if(weights[layer].length != layerSizes[layer + 1])
                 throw new InvalidParameterException("Weights must have exactly 1 value for every input and output combination between layers.");
+            for(int out = 0; out < weights[layer].length; ++out)
+                if(weights[layer][out].length != layerSizes[layer])
+                    throw new InvalidParameterException("Weights must have exactly 1 value for every input and output combination between layers.");
+        }
     }
 
 
@@ -103,19 +107,18 @@ public class SubstrateNetwork implements NeuralNetwork {
         //for each layer, calculate the value of the next one given the inputs and weights of the inputs
         // layer is the current input; don't run last layer, it is output
         for(int layer = 0; layer < (layers.length - 1); ++layer) {
+            final float[][] layerWeights = weights[layer];
             outputs = new float[layerSizes[layer + 1]];
 
             //for all the outputs, calculate the value based on all inputs and associated weights
-            for(int j = 0; j < layerSizes[layer + 1]; ++j) {
+            for(int out = 0; out < layerSizes[layer + 1]; ++out) {
                 float sum = 0;
-                //beginning of the weights for this specific output.
-                final int weightOffset = j * layerSizes[layer];
 
-                //dot(input, weights[layer] + weightOffset)
-                for(int i = 0; i < layerSizes[layer]; ++i)
-                    sum += last[i] * weights[layer][weightOffset + i];
+                //dot(input, weights[layer][out])
+                for(int in = 0; in < layerSizes[layer]; ++in)
+                    sum += last[in] * layerWeights[out][in];
 
-                outputs[j] = (layer == layers.length - 2) ?
+                outputs[out] = (layer == layers.length - 2) ?
                                      outputFunction.calculate(sum) :
                                      hiddenFunction.calculate(sum);
             }

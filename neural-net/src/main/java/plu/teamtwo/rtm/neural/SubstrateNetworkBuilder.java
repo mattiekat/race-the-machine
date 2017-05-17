@@ -6,8 +6,8 @@ public class SubstrateNetworkBuilder implements NeuralNetworkBuilder {
     int[][] layers;
 
     /// Defines weights between substrates (e.g. weights[0] defines a weight matrix between input and next substrate).
-    ///  Stored as (x2, y2, ..., x1, y1, ...), i.e. (output, input)
-    float[][] weights;
+    ///  Stored as weights[layer][output][input]
+    float[][][] weights;
 
     /// Activation function used to process inputs with before calculating.
     ActivationFunction inputFunction = ActivationFunction.LINEAR;
@@ -42,7 +42,7 @@ public class SubstrateNetworkBuilder implements NeuralNetworkBuilder {
      * Define weights between substrates (e.g. weights[0] defines a weight matrix between input and next substrate).
      * Stored as (x2, y2, ..., x1, y1, ...), i.e. (output, input)
      */
-    public SubstrateNetworkBuilder weights(float[][] weights) {
+    public SubstrateNetworkBuilder weights(float[][][] weights) {
         this.weights = weights;
         return this;
     }

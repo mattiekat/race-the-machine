@@ -11,13 +11,13 @@ public class SubstrateNetworkTest {
         NeuralNetwork net = new SubstrateNetworkBuilder()
             .layers(new int[][]{{2, 2}, {2, 2}, {1}})
             .weights(
-                new float[][]{{
-                    0.0f,  0.0f,  0.0f,  0.0f,
-                    0.0f,  0.0f,  0.0f,  0.0f,
-                    0.0f,  0.0f,  0.0f,  0.0f,
-                    0.0f,  0.0f,  0.0f,  0.0f
+                new float[][][]{{
+                    {0.0f,  0.0f,  0.0f,  0.0f},
+                    {0.0f,  0.0f,  0.0f,  0.0f},
+                    {0.0f,  0.0f,  0.0f,  0.0f},
+                    {0.0f,  0.0f,  0.0f,  0.0f}
                 },{
-                    0.0f,  0.0f,  0.0f,  0.0f
+                    {0.0f,  0.0f,  0.0f,  0.0f}
                 }}
             ).create();
 
@@ -31,13 +31,13 @@ public class SubstrateNetworkTest {
         NeuralNetwork net = new SubstrateNetworkBuilder()
             .layers(new int[][]{{2, 2}, {2, 2}, {1}})
             .weights(
-                new float[][]{{
-                    0.0f,  0.0f,  0.0f,  0.0f,
-                    0.0f,  0.0f,  0.0f,  0.0f,
-                    0.0f,  1.0f,  0.0f,  0.0f,
-                    0.0f,  0.0f,  0.0f,  0.0f
+                new float[][][]{{
+                    {0.0f,  0.0f,  0.0f,  0.0f},
+                    {0.0f,  0.0f,  0.0f,  0.0f},
+                    {0.0f,  1.0f,  0.0f,  0.0f},
+                    {0.0f,  0.0f,  0.0f,  0.0f}
                 },{
-                    0.0f,  0.0f, 10.0f,  0.0f
+                    {0.0f,  0.0f, 10.0f,  0.0f}
                 }}
             ).inputFunction(ActivationFunction.LINEAR)
             .hiddenFunction(ActivationFunction.SIGMOID)
