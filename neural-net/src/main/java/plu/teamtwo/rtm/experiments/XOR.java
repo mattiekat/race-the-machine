@@ -123,13 +123,6 @@ public class XOR implements Runnable {
                 expected = ((int)input[1] ^ (int)input[2]) == 1;
             }
             return input;
-//            if(--rounds < 0) return null;
-//
-//            float a = Math.round(Math.random());
-//            float b = Math.round(Math.random());
-//            expected = ((int)a ^ (int)b) == 1;
-//
-//            return new float[]{1.0f, a, b};
         }
 
 
@@ -141,8 +134,8 @@ public class XOR implements Runnable {
          */
         @Override
         public void acceptOutput(float[] output) {
-            error += Math.abs((expected ? 1.0f : 0.0f) - output[0]);
-            if(output[0] >= 0.5 == expected)
+            error += Math.abs((expected ? 1.0f : -1.0f) - output[0]);
+            if(output[0] >= 0 == expected)
                 correct++;
         }
 
@@ -155,8 +148,7 @@ public class XOR implements Runnable {
          */
         @Override
         public double getScore() {
-            //return (score / 4.0f) * 100.0f;
-            return Math.pow(4.0f - error, 2);
+            return Math.pow(8.0f - error, 2);
         }
 
 
