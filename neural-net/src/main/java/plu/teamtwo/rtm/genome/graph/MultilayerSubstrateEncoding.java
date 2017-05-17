@@ -3,9 +3,9 @@ package plu.teamtwo.rtm.genome.graph;
 import plu.teamtwo.rtm.genome.Genome;
 import plu.teamtwo.rtm.genome.GenomeCache;
 import plu.teamtwo.rtm.neural.ActivationFunction;
-import plu.teamtwo.rtm.neural.CPPNBuilder;
 import plu.teamtwo.rtm.neural.NeuralNetwork;
 import plu.teamtwo.rtm.neural.SubstrateNetwork;
+import plu.teamtwo.rtm.neural.SubstrateNetworkBuilder;
 
 import java.util.Arrays;
 
@@ -15,6 +15,11 @@ import java.util.Arrays;
  * resulting SubstrateNetwork.
  */
 public class MultilayerSubstrateEncoding implements Genome {
+    /// Threshold for a link to be expressed
+    private static final float LEO_THRESHOLD = 0.5f;
+    /// Range of output used as a weight in substrate network, forms the range [-WIGHT_RANGE, +WEIGHT_RANGE]
+    private static final float WEIGHT_RANGE = 3.0f;
+
     /// Activation function used to process inputs with before calculating.
     private final ActivationFunction inputFunction;
     /// Activation function to use for output nodes.
@@ -22,6 +27,8 @@ public class MultilayerSubstrateEncoding implements Genome {
     /// Activation function to use for hidden nodes on the substrate.
     private final ActivationFunction hiddenFunction;
     private int[][] layers;
+    ///mappings from n-dimensional space into 1D vector of each layer's nodes
+    private int[][] mappingProducts;
     private int[] layerSizes;
     /// The cppn used for calculating the internal connections. Note that the cppn should be called with
     ///  x1, y1, z1, ..., x2, y2, z2, ..., bias such that the the coordinates for each dimension are next to each other.
@@ -43,6 +50,11 @@ public class MultilayerSubstrateEncoding implements Genome {
         inputFunction = builder.inputFunction;
         outputFunction = builder.outputFunction;
         hiddenFunction = builder.hiddenFunction;
+
+        //calculate the mapping products for use in creating the neural network
+        mappingProducts = new int[layers.length][];
+        for(int layer = 0; layer < layers.length; ++layer)
+            mappingProducts[layer] = calculateMappingProducts(layers[layer], false);
 
         //construct the CPPN with outputs for each layer transition and enough inputs to support the largest
         // transition's dimensional space
@@ -252,8 +264,109 @@ public class MultilayerSubstrateEncoding implements Genome {
      */
     @Override
     public NeuralNetwork constructNeuralNetwork() {
-        //calcualte outputs of CPPN for each input output pairing and then use those for the network
-        // normalize the outputs of the CPPN to be between -3 and 3
+        //calculate outputs of CPPN for each input output pairing and then use those for the network
+
+        final NeuralNetwork network = cppn.constructNeuralNetwork();
+
+        final int numTransitions = layers.length - 1; //number of transitions between layers
+        float[][][] weights = new float[numTransitions][][];
+
+        //for all the layers, set weights of each input, output pair
+        for(int layer = 0; layer < numTransitions; ++layer) {
+            final int inputLayerSize = layerSizes[layer];       //number of nodes on input substrate
+            final int outputLayerSize = layerSizes[layer + 1];  //number of nodes on output substrate
+
+            final int[] inputDimensions = layers[layer];
+            final int[] outputDimensions = layers[layer + 1];
+
+            final int weightIndex = layer * 2;  //index in output of the weight for current layer
+            final int leoIndex = layer * 2 + 1; //index in output of the link expression value for current layer
+
+            weights[layer] = new float[outputLayerSize][inputLayerSize];
+            final float[][] layerWeights = weights[layer];
+
+            //for all outputs, construct a vector of input weights
+            for(int out = 0; out < outputLayerSize; ++out) {
+
+                //for all inputs, calculate the weight to the output
+                for(int in = 0; in < inputLayerSize; ++in) {
+                    //normalize the input and output coordinates to a value between -1 and 1 for all dimensions
+                    final float[] inpos = mapPosition(inputDimensions, in);
+                    final float[] outpos = mapPosition(outputDimensions, out);
+
+                    //make sure we did not do a dumb since the copy may prevent errors from being pronounced
+                    if(inpos.length != inputDimensions.length)
+                        throw new RuntimeException("Error mapping input node to CPPN.");
+                    if(outpos.length != outputDimensions.length)
+                        throw new RuntimeException("Error mapping output node to CPPN.");
+
+                    //copy the mappings into a single input for the network
+                    final float[] combpos = new float[network.inputs()];
+                    System.arraycopy(inpos, 0, combpos, 0, inpos.length);
+                    System.arraycopy(outpos, 0, combpos, inpos.length, outpos.length);
+                    combpos[combpos.length - 1] = 1; //set bias
+
+                    //get the outputs of the network, then check for LEO and if above threshold, use the weight
+                    final float[] outputs = network.calculate(combpos);
+                    if(outputs[leoIndex] > LEO_THRESHOLD) {
+                        float weight = outputs[weightIndex];
+                        //we use SIGMOID output so this will normalize it to be within +/- WEIGHT_RANGE
+                        weight = (weight * 2.0f - 1.0f) * WEIGHT_RANGE;
+                        layerWeights[out][in] = weight;
+                    }
+                }
+            }
+        }
+
+        //build the new network
+        return new SubstrateNetworkBuilder()
+                       .inputFunction(inputFunction)
+                       .outputFunction(outputFunction)
+                       .hiddenFunction(hiddenFunction)
+                       .layers(layers)
+                       .weights(weights)
+                       .create();
+    }
+
+
+    /**
+     *
+     * @param dimensions
+     * @param p
+     * @return
+     */
+    private float[] mapPosition(int[] dimensions, int p) {
+        //TODO: map the positions from 1D vector to n-dimensional space and normalize each coordinate to be between -1 and 1
         return null;
+    }
+
+
+    /**
+     * Calculate the products needed for each dimension using dynamic programming.
+     * i.e. Let each Xi be the product of all Dj dimension sizes where n > j > i.
+     * <p>
+     * Use this for calculating the index of a n-dimensional point in a vector. Take the point (1, 2, 3) in 3D space,
+     * you would want to multiply 1 by the maximum size of the second two dimensions, and 2 by the maximum size of the
+     * third dimension, and finally add the value 3 because it is the lowest order dimension. Thus let the result of
+     * this function be P, and the correct index would be 1*p[0] + 2*p[2] + 3*p[3].
+     *
+     * @param d       Array of dimensions where d[0] is the highest order dimension and d[n-1] is the lowest order
+     * @param inplace Calculate the values in-place, otherwise makes a copy first.
+     * @return An array such that each Pi is the product of all Dj where i < j < n.
+     */
+    private static int[] calculateMappingProducts(int[] d, boolean inplace) {
+        int[] p = inplace ? d : Arrays.copyOf(d, d.length);
+
+        //calculate from the rear to make use of past calculations
+        int last = p[p.length - 1];
+        p[p.length - 1] = 1;
+
+        for(int i = p.length - 2; i >= 0; --i) {
+            int saved = p[i];
+            p[i] = last * p[i + 1];
+            last = saved;
+        }
+
+        return p;
     }
 }
