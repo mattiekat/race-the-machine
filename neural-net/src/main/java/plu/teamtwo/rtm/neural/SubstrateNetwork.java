@@ -96,10 +96,10 @@ public class SubstrateNetwork implements NeuralNetwork {
         if(inputs.length != layerSizes[0])
             throw new InvalidParameterException("Invalid number of inputs.");
 
-//        if(inputFunction != ActivationFunction.LINEAR)
-//            //would do same thing without if statement, except it would take longer
-//            for(int i = 0; i < inputs.length; ++i)
-//                inputs[i] = inputFunction.calculate(inputs[i]);
+        if(inputFunction != ActivationFunction.LINEAR)
+            //would do same thing without if statement, except it would take longer
+            for(int i = 0; i < inputs.length; ++i)
+                inputs[i] = inputFunction.calculate(inputs[i]);
 
         float[] last = inputs;
         float[] outputs = null;
