@@ -1,6 +1,6 @@
 package plu.teamtwo.rtm.genome.graph;
 
-import plu.teamtwo.rtm.core.util.Pair;
+import plu.teamtwo.rtm.core.util.Triple;
 import plu.teamtwo.rtm.genome.Genome;
 import plu.teamtwo.rtm.genome.GenomeCache;
 import plu.teamtwo.rtm.neural.ActivationFunction;
@@ -90,14 +90,14 @@ public class GraphEncoding implements Genome {
             for(Node from : nodeGenes.values()) {
                 for(Node to : nodeGenes.values()) {
                     if(from == to || from.nodeType != NodeType.INPUT || to.nodeType != NodeType.OUTPUT) continue;
-                    addEdge(cache, from.id, to.id);
+                    addEdge(cache, from.id, to.id,1.0f);
                 }
             }
         } else {
-            for(Pair<Integer, Integer> c : builder.initialConnections) {
+            for(Triple<Integer, Integer, Float> c : builder.initialConnections) {
                 if(c.a < 0 || c.b < 0 || c.a >= nodeGenes.size() || c.b >= nodeGenes.size())
                     throw new InvalidParameterException("Invalid node specified for connection.");
-                addEdge(cache, c.a, c.b);
+                addEdge(cache, c.a, c.b, c.c);
             }
         }
     }
@@ -394,7 +394,7 @@ public class GraphEncoding implements Genome {
             } while(!MUTATE_RECURRENT_EDGES && isRecurrent(from, to));
 
             //add the edge and make sure it is enabled if it was already there.
-            if(addEdge(cache, from, to)) break;
+            if(addEdge(cache, from, to, 1.0f)) break;
         }
     }
 
@@ -507,9 +507,10 @@ public class GraphEncoding implements Genome {
      * @param cache    Cached information about the nodes and edges.
      * @param nodeFrom Origin node for the edge.
      * @param nodeTo   Termination node for the edge.
+     * @param weight   Weight of the new connection
      * @return True if the Edge was added successfully.
      */
-    private boolean addEdge(GraphEncodingCache cache, int nodeFrom, int nodeTo) {
+    private boolean addEdge(GraphEncodingCache cache, int nodeFrom, int nodeTo, float weight) {
         //check if the edge already exists
         for(Edge e : edgeGenes.values())
             if(e.fromNode == nodeFrom && e.toNode == nodeTo)
@@ -519,9 +520,9 @@ public class GraphEncoding implements Genome {
         int id = cache.getMutatedEdge(nodeFrom, nodeTo);
         Edge e;
         if(id >= 0)
-            e = new Edge(id, nodeFrom, nodeTo, 1.0f);
+            e = new Edge(id, nodeFrom, nodeTo, weight);
         else {
-            e = new Edge(cache.nextEdgeID(), nodeFrom, nodeTo, 1.0f);
+            e = new Edge(cache.nextEdgeID(), nodeFrom, nodeTo, weight);
             cache.addMutatedEdge(e.id, nodeFrom, nodeTo);
         }
 

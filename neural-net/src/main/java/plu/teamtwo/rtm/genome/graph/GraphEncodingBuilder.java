@@ -1,6 +1,7 @@
 package plu.teamtwo.rtm.genome.graph;
 
 import plu.teamtwo.rtm.core.util.Pair;
+import plu.teamtwo.rtm.core.util.Triple;
 import plu.teamtwo.rtm.genome.Genome;
 import plu.teamtwo.rtm.genome.GenomeBuilder;
 import plu.teamtwo.rtm.genome.GenomeCache;
@@ -22,7 +23,7 @@ public class GraphEncodingBuilder implements GenomeBuilder {
     /// Should the genome be able to randomize its activation functions (except for output nodes)?
     boolean randomActivations = false;
     List<ActivationFunction> hiddenNodes = new LinkedList<>();
-    List<Pair<Integer, Integer>> initialConnections = null;
+    List<Triple<Integer, Integer, Float>> initialConnections = null;
 
 
     /**
@@ -73,10 +74,11 @@ public class GraphEncodingBuilder implements GenomeBuilder {
      *
      * @param f From node; the starting node of the connection.
      * @param t To node; the destination node of the connection.
+     * @param w Weight of the connection.
      */
-    public GraphEncodingBuilder connect(int f, int t) {
+    public GraphEncodingBuilder connect(int f, int t, float w) {
         if(initialConnections == null) initialConnections = new LinkedList<>();
-        initialConnections.add(new Pair<>(f, t));
+        initialConnections.add(new Triple<>(f, t, w));
         return this;
     }
 
@@ -114,7 +116,6 @@ public class GraphEncodingBuilder implements GenomeBuilder {
      * network as well since not all output functions have the same range.
      *
      * @param fn The function to use for outputs form the network.
-     * @return
      */
     public GraphEncodingBuilder outputFunction(ActivationFunction fn) {
         this.outputFunction = fn;
