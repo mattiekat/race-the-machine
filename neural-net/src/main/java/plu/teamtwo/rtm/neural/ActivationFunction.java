@@ -19,6 +19,7 @@ public enum ActivationFunction {
     SINUSOID((Float x) -> (float) Math.sin(x)),
     SOFTPLUS((Float x) -> (float) Math.log1p(Math.exp(x))),
     SOFTSIGN((Float x) -> x / (1.0f + (x >= 0 ? x : -x))),
+    STEP((Float x) -> (x < 0 ? 0.0f : 1.0f)),
     SYMETRIC((Float x) -> (x >= 0 ? -x : x) + 1.0f),
     TANH((Float x) -> (float) Math.tanh(x));
 
