@@ -10,7 +10,7 @@ import java.util.LinkedList;
 public class MultilayerSubstrateEncodingBuilder implements GenomeBuilder {
     private int[] inputs;
     private int[] outputs;
-    private LinkedList< int[] > hidden;
+    private LinkedList< int[] > hidden = new LinkedList<>();
 
     /// Activation function used to process inputs with before calculating.
     ActivationFunction inputFunction = ActivationFunction.LINEAR;

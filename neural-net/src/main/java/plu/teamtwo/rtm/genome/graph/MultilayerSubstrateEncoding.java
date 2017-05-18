@@ -99,7 +99,12 @@ public class MultilayerSubstrateEncoding implements Genome {
         for(int i = 0; i < layers.length; ++i)
             layers[i] = Arrays.copyOf(other.layers[i], other.layers[i].length);
 
+        mappingProducts = new int[other.mappingProducts.length][];
+        for(int i = 0; i < mappingProducts.length; ++i)
+            mappingProducts[i] = Arrays.copyOf(other.mappingProducts[i], other.mappingProducts[i].length);
+
         layerSizes = Arrays.copyOf(other.layerSizes, other.layerSizes.length);
+
 
         this.cppn = cppn;
 
