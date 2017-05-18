@@ -8,18 +8,18 @@ import static org.junit.Assert.assertEquals;
 
 
 public class MultilayerSubstrateEncodingTest {
-    @Test
-    public void test() {
-        GAController controller = new GAController(
-             new MultilayerSubstrateEncodingBuilder()
-                     .inputs(new int[]{96, 96, 3})
-                     .outputs(new int[]{3})
-                     .addLayer(new int[]{96, 96, 3})
-        );
-
-        controller.createFirstGeneration();
-        controller.assesGeneration(new ScoreFunction());
-    }
+//    @Test
+//    public void test() {
+//        GAController controller = new GAController(
+//             new MultilayerSubstrateEncodingBuilder()
+//                     .inputs(new int[]{96, 96, 3})
+//                     .outputs(new int[]{3})
+//                     .addLayer(new int[]{96, 96, 3})
+//        );
+//
+//        controller.createFirstGeneration();
+//        controller.assesGeneration(new ScoreFunction());
+//    }
 
 
     private class ScoreFunction implements ScoringFunction {
