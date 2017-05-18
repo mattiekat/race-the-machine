@@ -27,20 +27,18 @@ class ScoreFunction(object):
         if not self.done:
             env.render()
             j_inputs = gateway.new_array(gateway.jvm.float, INPUTS)
-            for x in range(0, 96):
-                for y in range(0, 96):
-                    for z in range(0, 3):
-                        j_inputs[x*288 + y*3 + z] = self.observation[x][y][z]
+            # for x in range(0, 12):
+            #     for y in range(0, 12):
+            #         for z in range(0, 3):
+            #             j_inputs[x*36 + y*3 + z] = float(self.observation[x*8 + 4][y*8 + 4][z])
 
         return j_inputs
 
     def acceptOutput(self, output):
-        action = numpy.empty(3, dtype=numpy.float64)
-        action[0] = (numpy.float64(output[0]) * 2.0) - 1.0
-        action[1] = numpy.float64(output[1])
-        action[2] = numpy.float64(output[2])
-
-        self.observation, reward, self.done, _ = env.step(action)
+        #action = [(float(output[0]) * 2.0) - 1.0, float(output[1]), float(output[2])]
+        action = env.action_space.sample()
+        # self.observation, reward, self.done, _ = env.step(action)
+        env.step(action)
         self.score += float(reward)
         self.steps += 1
 
@@ -63,10 +61,13 @@ if __name__ == '__main__':
 
     DISCRETE = False
 
-    INPUTS = 27648
+    INPUTS = 432
     INPUT_SIZE = gateway.new_array(gateway.jvm.int, 3)
-    INPUT_SIZE[0] = INPUT_SIZE[1] = 96
+    INPUT_SIZE[0] = INPUT_SIZE[1] = 12
     INPUT_SIZE[2] = 3
+
+    HIDDEN_SIZE = gateway.new_array(gateway.jvm.int, 2)
+    HIDDEN_SIZE[0] = HIDDEN_SIZE[1] = 12
 
     OUTPUT_SIZE = gateway.new_array(gateway.jvm.int, 1)
     OUTPUT_SIZE[0] = 3
@@ -76,7 +77,7 @@ if __name__ == '__main__':
     #print("Inputs: {}, Outputs: {}, Discrete: {}, Winning Score: {}".format(INPUT_SIZE, OUTPUT_SIZE, DISCRETE, WINNING_SCORE))
 
     gateway.entry_point.init(gateway.jvm.plu.teamtwo.rtm.genome.graph.MultilayerSubstrateEncodingBuilder()
-                             .inputs(INPUT_SIZE).outputs(OUTPUT_SIZE).addLayer(INPUT_SIZE))
+                             .inputs(INPUT_SIZE).outputs(OUTPUT_SIZE).addLayer(HIDDEN_SIZE))
 
     controller = gateway.entry_point.getController()
     controller.createFirstGeneration()

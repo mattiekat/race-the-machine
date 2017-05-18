@@ -42,8 +42,8 @@ class ScoreFunction(object):
         return j_inputs
 
     def acceptOutput(self, output):
+        action = None
         if DISCRETE:
-            action = None
             max = -100.0
             for i in range(0, OUTPUT_SIZE):
                 if numpy.float64(output[i]) > max:
