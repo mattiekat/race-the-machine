@@ -1,4 +1,4 @@
-package plu.teamtwo.rtm.neat;
+package plu.teamtwo.rtm.genome.graph;
 
 class Edge implements Comparable<Edge> {
     /// The historically-based ID of this edge (innovation number)

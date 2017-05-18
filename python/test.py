@@ -1,7 +1,7 @@
 import gym
 
 if __name__ == '__main__':
-    env = gym.make('LunarLanderContinuous-v2')
+    env = gym.make('CarRacing-v0')
     for i_episode in range(10000):
         observation = env.reset()
         done = False

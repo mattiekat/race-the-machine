@@ -6,7 +6,7 @@ import java.util.List;
 
 import static plu.teamtwo.rtm.core.util.Rand.getRandomNum;
 
-class Species implements Iterable<Genome> {
+class Species implements Iterable<Individual> {
     /// Threshold used in compatibility distance to determine if two individuals are in the same species (δt).
     private static final float COMPATIBILITY_THRESHOLD = 3.0f;
 
@@ -22,8 +22,8 @@ class Species implements Iterable<Genome> {
     /// Last time the peakFitness was improved upon.
     private int lastImprovement;
 
-    private Genome representative;
-    private List<Genome> memebers = new ArrayList<>();
+    private Individual representative;
+    private List<Individual> memebers = new ArrayList<>();
     private transient boolean sorted;
 
 
@@ -36,7 +36,7 @@ class Species implements Iterable<Genome> {
      * @param curGen          The starting generation for this species.
      * @param representative  First member of the species which will represent the genetic traits.
      */
-    Species(int speciesID, int parentSpeciesID, int curGen, Genome representative) {
+    Species(int speciesID, int parentSpeciesID, int curGen, Individual representative) {
         this(speciesID, parentSpeciesID, curGen);
         this.representative = representative;
         memebers.add(representative);
@@ -87,7 +87,7 @@ class Species implements Iterable<Genome> {
      *
      * @return Representative of this species.
      */
-    Genome getRep() {
+    Individual getRep() {
         return representative;
     }
 
@@ -127,7 +127,7 @@ class Species implements Iterable<Genome> {
      *
      * @return Most fit member of this species.
      */
-    Genome getChampion() {
+    Individual getChampion() {
         return getNthMostFit(0);
     }
 
@@ -138,7 +138,7 @@ class Species implements Iterable<Genome> {
      * @param n Rank of the member we want between 0 (most fit) and size - 1 (least fit).
      * @return nth most fit member of this species.
      */
-    Genome getNthMostFit(int n) {
+    Individual getNthMostFit(int n) {
         if(memebers.size() <= n) return null;
         sortByFitness();
         return memebers.get(n);
@@ -151,8 +151,8 @@ class Species implements Iterable<Genome> {
      * @param n Rank of the member we want between 0 (most fit) and size - 1 (least fit).
      * @return Former nth most fit member of this species.
      */
-    Genome removeNthMostFit(int n) {
-        Genome g = getNthMostFit(n);
+    Individual removeNthMostFit(int n) {
+        Individual g = getNthMostFit(n);
         if(g == null) return null;
         if(!memebers.remove(g)) return null;
         return g;
@@ -171,14 +171,15 @@ class Species implements Iterable<Genome> {
 
 
     /**
-     * Checks if the compatibility distance between a genome and the representative of the species within the threshold.
+     * Checks if the compatibility distance between an individual and the representative of the species is within the
+     * threshold.
      *
-     * @param genome Genome to check the compatibility of.
-     * @return True of the genome is compatible, false otherwise.
+     * @param other Individual to check the compatibility of.
+     * @return True of the individuals are compatible, false otherwise.
      */
-    boolean isCompatible(Genome genome) {
+    boolean isCompatible(Individual other) {
         if(getRep() == null) return true;
-        return getRep().compatibilityDistance(genome) < COMPATIBILITY_THRESHOLD;
+        return getRep().compatibilityDistance(other) < COMPATIBILITY_THRESHOLD;
     }
 
 
@@ -188,16 +189,16 @@ class Species implements Iterable<Genome> {
 
 
     /**
-     * Adds a new genome to the species. This will return false if it is not able to be added. False will be returned
-     * if the genome is not compatible with this one.
+     * Adds a new individual to the species. This will return false if it is not able to be added. False will be
+     * returned if the individual is not compatible with this one.
      *
-     * @param genome Genome to be added.
+     * @param other Individual to be added.
      * @return True if it was added successfully, false otherwise.
      */
-    boolean add(Genome genome) {
-        if(!isCompatible(genome)) return false;
+    boolean add(Individual other) {
+        if(!isCompatible(other)) return false;
         sorted = false;
-        return memebers.add(genome);
+        return memebers.add(other);
     }
 
 
@@ -208,7 +209,7 @@ class Species implements Iterable<Genome> {
         sorted = false;
         final int size = memebers.size();
         fitness = 0;
-        for(Genome i : memebers)
+        for(Individual i : memebers)
             fitness += i.getFitness();
 
         fitness /= (float) memebers.size();
@@ -226,7 +227,7 @@ class Species implements Iterable<Genome> {
      * @return An iterator over the genomes in this species.
      */
     @Override
-    public Iterator<Genome> iterator() {
+    public Iterator<Individual> iterator() {
         return memebers.iterator();
     }
 
@@ -237,7 +238,7 @@ class Species implements Iterable<Genome> {
     void sortByFitness() {
         if(sorted) return;
         //sort in descending order
-        memebers.sort((Genome a, Genome b) -> new Float(b.getFitness()).compareTo(a.getFitness()));
+        memebers.sort((Individual a, Individual b) -> new Float(b.getFitness()).compareTo(a.getFitness()));
         sorted = true;
     }
 }

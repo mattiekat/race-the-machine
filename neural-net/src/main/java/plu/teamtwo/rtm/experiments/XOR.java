@@ -2,10 +2,11 @@ package plu.teamtwo.rtm.experiments;
 
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
-import plu.teamtwo.rtm.neat.Encoding;
-import plu.teamtwo.rtm.neat.Genome;
-import plu.teamtwo.rtm.neat.NEATController;
+import plu.teamtwo.rtm.genome.graph.GraphEncodingBuilder;
+import plu.teamtwo.rtm.neat.GAController;
+import plu.teamtwo.rtm.neat.Individual;
 import plu.teamtwo.rtm.neat.ScoringFunction;
+import plu.teamtwo.rtm.neural.ActivationFunction;
 
 import java.io.FileDescriptor;
 import java.io.FileOutputStream;
@@ -22,16 +23,20 @@ public class XOR implements Runnable {
     @Override
     public void run() {
         PrintStream output = new PrintStream(new FileOutputStream(FileDescriptor.out));
-        NEATController controller = new NEATController(
-                Encoding.DIRECT_ENCODING,
-                3, 1
+        GAController controller = new GAController(
+                new GraphEncodingBuilder()
+                        .inputs(3)
+                        .outputs(1)
+                        .inputFunction(ActivationFunction.TANH)
+                        .outputFunction(ActivationFunction.TANH)
+                        .hiddenFunction(ActivationFunction.TANH)
         );
 
         controller.createFirstGeneration();
 
         for(int g = 0; g < 1000; ++g) {
             boolean foundWinner = controller.assesGeneration(new XORScore());
-            final Genome best = controller.getBestIndividual();
+            final Individual best = controller.getBestIndividual();
             System.out.println(String.format("Gen %d: %.2f, %.1f", controller.getGenerationNum(), controller.getFitness(), best.getFitness()));
             if(foundWinner) {
                 Gson gson = new GsonBuilder().setPrettyPrinting().create();
@@ -118,13 +123,6 @@ public class XOR implements Runnable {
                 expected = ((int)input[1] ^ (int)input[2]) == 1;
             }
             return input;
-//            if(--rounds < 0) return null;
-//
-//            float a = Math.round(Math.random());
-//            float b = Math.round(Math.random());
-//            expected = ((int)a ^ (int)b) == 1;
-//
-//            return new float[]{1.0f, a, b};
         }
 
 
@@ -136,8 +134,8 @@ public class XOR implements Runnable {
          */
         @Override
         public void acceptOutput(float[] output) {
-            error += Math.abs((expected ? 1.0f : 0.0f) - output[0]);
-            if(output[0] >= 0.5 == expected)
+            error += Math.abs((expected ? 1.0f : -1.0f) - output[0]);
+            if(output[0] >= 0 == expected)
                 correct++;
         }
 
@@ -150,8 +148,7 @@ public class XOR implements Runnable {
          */
         @Override
         public double getScore() {
-            //return (score / 4.0f) * 100.0f;
-            return Math.pow(4.0f - error, 2);
+            return Math.pow(8.0f - error, 2);
         }
 
 
