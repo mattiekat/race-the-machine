@@ -1,5 +1,6 @@
 package plu.teamtwo.rtm.client.gui;
 
+import plu.teamtwo.rtm.client.InputController;
 import plu.teamtwo.rtm.ii.ProcessedData;
 import plu.teamtwo.rtm.ii.RTSProcessor;
 
@@ -47,9 +48,10 @@ public class MainWindow extends JFrame implements RTSProcessor.ProcessingListene
     @Override
     public void frameProcessed(ProcessedData data) {
         SwingUtilities.invokeLater(() -> {
-                img_panel_capture.setContents(data.capturedImage, data.polygons);
-                img_panel_processed.setContents(data.processedImage, data.polygons);
+                img_panel_capture.setContents(data.capturedImage, data.polygons, data.score);
+                img_panel_processed.setContents(data.processedImage, data.polygons, data.score);
                 repaint();
             });
+        InputController.getInstance().updateScore(data.score);
     }
 }

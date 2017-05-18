@@ -21,6 +21,7 @@ public class ImagePanel extends JPanel implements MouseListener, ActionListener 
     protected final RTSProcessor rtsp;
     protected BufferedImage img = null;
     protected List<Polygon> polygons = null;
+    protected int score = 0;
     public static final Font FPS_FONT = new Font("Arial", Font.BOLD, 36);
     protected final Dimension fullSize;
 
@@ -45,9 +46,10 @@ public class ImagePanel extends JPanel implements MouseListener, ActionListener 
         contextMenu.add(setStartClickMenuItem);
     }
 
-    public void setContents(BufferedImage img, List<Polygon> polygons) {
+    public void setContents(BufferedImage img, List<Polygon> polygons, int score) {
         this.img = img;
         this.polygons = polygons;
+        this.score = score;
     }
 
     @Override
@@ -105,7 +107,7 @@ public class ImagePanel extends JPanel implements MouseListener, ActionListener 
         g.fillOval(startButtonPosition.x.intValue()-10, startButtonPosition.y.intValue()-10, 20, 20);
 
         g.setFont(FPS_FONT);
-        String fpsStr = ""+rtsp.getFPS() + ":" + (polygons == null ? -1 : polygons.size());
+        String fpsStr = ""+rtsp.getFPS() + ":" + (polygons == null ? -1 : polygons.size() + ":" + score);
         g.setColor(Color.BLACK);
         g.fillRect(6, 6, 50, 40);
         g.setColor(Color.YELLOW);

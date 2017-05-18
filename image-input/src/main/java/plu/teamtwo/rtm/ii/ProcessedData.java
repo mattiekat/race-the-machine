@@ -14,11 +14,13 @@ public class ProcessedData {
     public final BufferedImage capturedImage;
     public final BufferedImage processedImage;
     public final List<Polygon> polygons;
+    public final int score;
 
-    public ProcessedData(BufferedImage capturedImage, BufferedImage processedImage, List<Polygon> polygons) {
+    public ProcessedData(BufferedImage capturedImage, BufferedImage processedImage, List<Polygon> polygons, int score) {
         this.capturedImage = capturedImage;
         this.processedImage = processedImage;
         this.polygons = polygons;
+        this.score = score;
     }
 
     public boolean checkPoint(Point p) {

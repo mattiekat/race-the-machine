@@ -34,6 +34,9 @@ public class InputController {
 
     protected Point startButtonPosition;
 
+    protected int score = 0;
+    protected long lastScoreUpdate = -1;
+
     private InputController(GraphicsDevice screen) {
         try {
             robot = new Robot(screen);
@@ -64,13 +67,29 @@ public class InputController {
         robot.mousePress(InputEvent.BUTTON1_DOWN_MASK);
         robot.mouseRelease(InputEvent.BUTTON1_DOWN_MASK);
         gameRunning = true;
+        lastScoreUpdate = System.currentTimeMillis();
     }
 
     public boolean isGameRunning() {
         return gameRunning;
     }
 
+    public int getScore() {
+        return score;
+    }
 
+    public void updateScore(int score) {
+        if(!gameRunning) return;
+        long ct = System.currentTimeMillis();
+        if(score < 0) {
+            if((ct - lastScoreUpdate) > 5000) {
+                gameRunning = false;
+            }
+        } else {
+            this.score = score;
+        }
+        lastScoreUpdate = ct;
+    }
 
 
 }

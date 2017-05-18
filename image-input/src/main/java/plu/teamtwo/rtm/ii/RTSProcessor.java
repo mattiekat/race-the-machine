@@ -1,15 +1,19 @@
 package plu.teamtwo.rtm.ii;
 
 import org.opencv.core.*;
+import org.opencv.imgcodecs.Imgcodecs;
 import org.opencv.imgproc.Imgproc;
 import plu.teamtwo.rtm.core.util.Point;
 import plu.teamtwo.rtm.core.util.Polygon;
 
-import java.util.List;
+import javax.imageio.ImageIO;
+import java.io.FileNotFoundException;
+import java.io.IOException;
+import java.net.URL;
+import java.util.*;
 import java.awt.*;
 import java.awt.image.BufferedImage;
-import java.util.HashSet;
-import java.util.LinkedList;
+import java.util.List;
 import java.util.concurrent.ConcurrentLinkedQueue;
 
 
@@ -28,13 +32,87 @@ public class RTSProcessor {
 
     private ConcurrentLinkedQueue<ProcessedData> cap_queue = new ConcurrentLinkedQueue<>();
 
+    private final Mat[] numtemps = new Mat[10];
+
+    public RTSProcessor() {this(new ScreenCap()); }
     public RTSProcessor(ScreenCap capper) {
         this.capper = capper;
+
+        try {
+            numtemps[0] = loadFromJar("/numtemp_0.png", 1);
+            numtemps[1] = loadFromJar("/numtemp_1.png", 1);
+            numtemps[2] = loadFromJar("/numtemp_2.png", 1);
+            numtemps[3] = loadFromJar("/numtemp_3.png", 1);
+            numtemps[4] = loadFromJar("/numtemp_4.png", 1);
+            numtemps[5] = loadFromJar("/numtemp_5.png", 1);
+            numtemps[6] = loadFromJar("/numtemp_6.png", 1);
+            numtemps[7] = loadFromJar("/numtemp_7.png", 1);
+            numtemps[8] = loadFromJar("/numtemp_8.png", 1);
+            numtemps[9] = loadFromJar("/numtemp_9.png", 1);
+        } catch(FileNotFoundException ex) {
+            throw new RuntimeException("FileNotFoundException: " + ex.getMessage());
+        }
+
+        if(numtemps[0].empty()) throw new NullPointerException();
     }
 
-    public RTSProcessor() {
-        this.capper = new ScreenCap();
+    private Mat loadFromJar(String name, int flags) throws FileNotFoundException {
+        URL url = getClass().getResource(name);
+        if(url == null)
+            throw new FileNotFoundException(name);
+
+        String path = url.getPath();
+        if(path.startsWith("/"))
+            path = path.substring(1);
+
+        Mat image = Imgcodecs.imread(path, flags);
+
+        if (image.empty()) {
+            BufferedImage buf;
+
+            try {
+                buf = ImageIO.read(url);
+            } catch (IOException e) {
+                System.out.println("IOException: " + e.getMessage());
+                return image;
+            }
+
+            int height = buf.getHeight();
+            int width = buf.getWidth();
+            int rgb, type, channels;
+
+            switch (flags) {
+                case Imgcodecs.CV_LOAD_IMAGE_GRAYSCALE:
+                    type = CvType.CV_8UC1;
+                    channels = 1;
+                    break;
+                case Imgcodecs.CV_LOAD_IMAGE_COLOR:
+                default:
+                    type = CvType.CV_8UC3;
+                    channels = 3;
+                    break;
+            }
+
+            byte[] px = new byte[channels];
+            image = new Mat(height, width, type);
+
+            for (int y=0; y<height; y++) {
+                for (int x=0; x<width; x++) {
+                    rgb = buf.getRGB(x, y);
+                    px[0] = (byte)(rgb & 0xFF);
+                    if (channels==3) {
+                        px[1] = (byte)((rgb >> 8) & 0xFF);
+                        px[2] = (byte)((rgb >> 16) & 0xFF);
+                    }
+                    image.put(y, x, px);
+                }
+            }
+        }
+
+        return image;
     }
+
+
 
     public int getFPS() { return fps; }
 
@@ -226,7 +304,45 @@ public class RTSProcessor {
             Mat dest = new Mat();
             morphOutput.copyTo(dest);
 
-            return new ProcessedData(img, Util.matToBufferedImage(dest), lp);
+            int score = parseScore(frame);
+
+            return new ProcessedData(img, Util.matToBufferedImage(dest), lp, score);
+        }
+
+        private int parseScore(Mat input) {
+
+            TreeMap<Double, Integer> numbers = new TreeMap<>(Collections.reverseOrder());
+
+            for(int i = 0; i < 10; i++) {
+
+                Mat result = new Mat(input.rows() - numtemps[i].rows() + 1, input.cols() - numtemps[i].cols() + 1, CvType.CV_32FC1);
+
+                Imgproc.matchTemplate(input, numtemps[i], result, Imgproc.TM_CCOEFF_NORMED);
+                Imgproc.threshold(result, result, 0.8, 1.0, Imgproc.THRESH_TOZERO);
+
+                final double tolerance = 0.9;
+
+                while(true) {
+
+                    Core.MinMaxLocResult mm = Core.minMaxLoc(result);
+                    if(mm.maxVal >= tolerance) {
+
+                        numbers.put(mm.maxLoc.x, i);
+
+                        Mat mask = Mat.zeros(result.rows() + 2, result.cols() + 2, CvType.CV_8U);
+                        Imgproc.floodFill(result, mask, mm.maxLoc, new Scalar(0), null, new Scalar(0.1), new Scalar(1.0), 4);
+                    } else break;
+                }
+            }
+
+            int num = 0;
+            int pow = 0;
+            if(numbers.isEmpty()) num = -1;
+            else {
+                for (Map.Entry<Double, Integer> entry : numbers.entrySet())
+                    num += (int) (entry.getValue().doubleValue() * Math.pow(10, pow++));
+            }
+            return num;
         }
     }
 
