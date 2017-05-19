@@ -122,6 +122,13 @@ public class ImagePanel extends JPanel implements MouseListener, ActionListener 
         g.setColor(Color.CYAN);
         g.fillOval(startButtonPosition.x.intValue()-10, startButtonPosition.y.intValue()-10, 20, 20);
 
+        g.setColor(InputController.getInstance().isPressed(InputController.Key.LEFT) ? Color.CYAN : Color.BLACK);
+        g.fillOval(this.getWidth()/2 - 100, this.getHeight() - 100, 50, 20);
+        g.setColor(InputController.getInstance().isPressed(InputController.Key.SPACE) ? Color.CYAN : Color.BLACK);
+        g.fillOval(this.getWidth()/2, this.getHeight() - 100, 50, 20);
+        g.setColor(InputController.getInstance().isPressed(InputController.Key.RIGHT) ? Color.CYAN : Color.BLACK);
+        g.fillOval(this.getWidth()/2 + 100, this.getHeight() - 100, 50, 20);
+
         g.setFont(FPS_FONT);
         String fpsStr = ""+rtsp.getFPS() + ":" + (polygons == null ? -1 : polygons.size() + ":" + score + ":" + InputController.getInstance().isGameRunning());
         g.setColor(Color.BLACK);

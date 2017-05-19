@@ -20,6 +20,8 @@ class RTSScoringFunction implements ScoringFunction, RTSProcessor.ProcessingList
         INPUT_WIDTH = width;
         INPUT_HEIGHT = height;
         observations = new LinkedBlockingQueue<float[]>();
+        Main.rtsp.addListener(this);
+        InputController.getInstance().startGame();
     }
 
     /**
@@ -77,6 +79,7 @@ class RTSScoringFunction implements ScoringFunction, RTSProcessor.ProcessingList
             if(inputs == null) continue;
             return inputs;
         }
+        Main.rtsp.removeListener(this);
         return null;
     }
 
@@ -90,9 +93,9 @@ class RTSScoringFunction implements ScoringFunction, RTSProcessor.ProcessingList
     @Override
     public void acceptOutput(float[] output) {
         final InputController ic = InputController.getInstance();
-        ic.setPressed(InputController.Key.LEFT, output[0] > 0.5f);
+        ic.setPressed(InputController.Key.LEFT, output[0] > 0.5f && output[0] > output[2]);
         ic.setPressed(InputController.Key.SPACE, output[1] > 0.5f);
-        ic.setPressed(InputController.Key.RIGHT, output[2] > 0.5f);
+        ic.setPressed(InputController.Key.RIGHT, output[2] > 0.5f && output[2] > output[0]);
         ic.updateInputs();
     }
 
@@ -105,6 +108,7 @@ class RTSScoringFunction implements ScoringFunction, RTSProcessor.ProcessingList
      */
     @Override
     public double getScore() {
+        System.out.println("\tScore: "+InputController.getInstance().getScore());
         return InputController.getInstance().getScore();
     }
 

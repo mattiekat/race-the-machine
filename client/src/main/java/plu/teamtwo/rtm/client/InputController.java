@@ -50,6 +50,10 @@ public class InputController {
         pressedKeys[key.ordinal()] = pressed;
     }
 
+    public boolean isPressed(Key key) {
+        return pressedKeys[key.ordinal()];
+    }
+
     public void updateInputs() {
         for(Key key : Key.values()) {
             if(pressedKeys[key.ordinal()])
