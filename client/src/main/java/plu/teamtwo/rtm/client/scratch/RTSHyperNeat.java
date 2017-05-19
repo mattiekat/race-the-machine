@@ -9,8 +9,8 @@ import plu.teamtwo.rtm.neat.Individual;
 public class RTSHyperNeat implements Runnable {
     private GAController controller;
 
-    public static int INPUT_WIDTH = 16;
-    public static int INPUT_HEIGHT = 16;
+    public static int INPUT_WIDTH = 32;
+    public static int INPUT_HEIGHT = 24;
 
     public static final int[] inputDimensions = {INPUT_WIDTH, INPUT_HEIGHT};
     public static final int[] hiddenDimensions = {INPUT_WIDTH, INPUT_HEIGHT};
@@ -33,7 +33,6 @@ public class RTSHyperNeat implements Runnable {
             Individual best = controller.getBestIndividual();
             System.out.println(String.format("Gen %d: %f, %f", g, controller.getFitness(), best.getFitness()));
             controller.nextGeneration();
-            InputController.getInstance().startGame();
         }
     }
 }
