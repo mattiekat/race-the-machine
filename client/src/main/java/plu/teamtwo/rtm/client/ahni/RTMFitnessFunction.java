@@ -6,6 +6,7 @@ import com.ojcoleman.ahni.hyperneat.Properties;
 import org.apache.log4j.Logger;
 import org.jgapcustomised.Chromosome;
 import plu.teamtwo.rtm.client.InputController;
+import plu.teamtwo.rtm.client.Main;
 import plu.teamtwo.rtm.core.util.Point;
 import plu.teamtwo.rtm.ii.ProcessedData;
 import plu.teamtwo.rtm.ii.RTSProcessor;
@@ -24,7 +25,7 @@ public class RTMFitnessFunction extends HyperNEATFitnessFunction implements RTSP
     private int leftKey, rightKey, spaceKey;
 
     // Activator
-    Activator substrate;
+    private Activator substrate;
 
     private static Logger logger = Logger.getLogger(RTMFitnessFunction.class);
 
@@ -34,6 +35,7 @@ public class RTMFitnessFunction extends HyperNEATFitnessFunction implements RTSP
     public void init(Properties props){
         super.init(props);
 
+        System.out.println( " ---- INITIALIZING ---- ");
         createPointArray(inputWidth, inputHeight);
 
     }
@@ -43,6 +45,10 @@ public class RTMFitnessFunction extends HyperNEATFitnessFunction implements RTSP
         running = true;
 
         substrate = activator;
+
+        System.out.println( " ---- EVALUATION STARTED ---- ");
+        Main.rtsp.addListener(this);
+        InputController.getInstance().startGame();
 
         // Wait until done evaluating
         while(running) {
@@ -56,7 +62,10 @@ public class RTMFitnessFunction extends HyperNEATFitnessFunction implements RTSP
             }
         }
 
-        return  InputController.getInstance().getScore();
+        System.out.println( " ---- EVALUATION ENDED ---- ");
+        Main.rtsp.removeListener(this);
+
+        return Math.min(1.0, InputController.getInstance().getScore() / 500000000.0);
     }
 
     private void createPointArray(int screenWidth, int screenHeight){
@@ -106,6 +115,7 @@ public class RTMFitnessFunction extends HyperNEATFitnessFunction implements RTSP
 
         // Notify when done
         if( !InputController.getInstance().isGameRunning() ) {
+            System.out.println( " ---- GAME OVER ---- ");
             synchronized(this) {
                 running = false;
                 this.notifyAll();

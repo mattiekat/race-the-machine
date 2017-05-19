@@ -1,5 +1,6 @@
 package plu.teamtwo.rtm.client.gui;
 
+import com.ojcoleman.ahni.hyperneat.Run;
 import plu.teamtwo.rtm.client.InputController;
 import plu.teamtwo.rtm.ii.RTSProcessor;
 
@@ -31,7 +32,8 @@ public class ImagePanel extends JPanel implements MouseListener, ActionListener 
     private Point contextPosition = null;
     private final JMenuItem setStartClickMenuItem;
     private final JMenuItem setScoreBoxMenuItem;
-    private final JMenuItem startMenuItem;
+    private final JMenuItem startLibraryMenuItem;
+    private final JMenuItem startScratchMenuItem;
 
     private Point startButtonPosition = new Point();
     private boolean scoreBoxGrabbing = false;
@@ -51,9 +53,12 @@ public class ImagePanel extends JPanel implements MouseListener, ActionListener 
         setScoreBoxMenuItem.addActionListener(this);
         contextMenu.add(setScoreBoxMenuItem);
         contextMenu.addSeparator();
-        startMenuItem = new JMenuItem("Start a Run");
-        startMenuItem.addActionListener(this);
-        contextMenu.add(startMenuItem);
+        startLibraryMenuItem = new JMenuItem("Start a Library Run");
+        startLibraryMenuItem.addActionListener(this);
+        contextMenu.add(startLibraryMenuItem);
+        startScratchMenuItem = new JMenuItem("Start a Scratch Run");
+        startScratchMenuItem.addActionListener(this);
+        contextMenu.add(startScratchMenuItem);
     }
 
     public void setContents(BufferedImage img, List<Polygon> polygons, int score) {
@@ -190,10 +195,12 @@ public class ImagePanel extends JPanel implements MouseListener, ActionListener 
             scoreBoxGrabbing = true;
         }
 
-        if(e.getSource() == startMenuItem) {
-            InputController.getInstance().startGame();
-            InputController.getInstance().setPressed(InputController.Key.LEFT, true);
-            InputController.getInstance().updateInputs();
+        if(e.getSource() == startLibraryMenuItem) {
+            new Thread(() -> { Run.main(new String[]{ "rtm.properties" }); }).start();
+        }
+
+        if(e.getSource() == startScratchMenuItem) {
+
         }
     }
 }

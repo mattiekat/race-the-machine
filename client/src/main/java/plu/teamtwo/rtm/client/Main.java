@@ -10,9 +10,11 @@ public class Main {
 
     static { System.loadLibrary(Core.NATIVE_LIBRARY_NAME); }
 
+    public static RTSProcessor rtsp;
+
     public static void main(String args[]) {
         ScreenCap sc = new ScreenCap(400, 100, 1280, 720);
-        RTSProcessor rtsp = new RTSProcessor(sc);
+        rtsp = new RTSProcessor(sc);
         InputController.init(sc.getScreen());
 
         MainWindow window = new MainWindow(rtsp);

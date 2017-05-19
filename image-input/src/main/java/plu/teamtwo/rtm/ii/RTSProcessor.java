@@ -364,7 +364,7 @@ public class RTSProcessor {
                 Imgproc.matchTemplate(cropped, numtempsScaled[i], result, Imgproc.TM_CCOEFF_NORMED);
                 Imgproc.threshold(result, result, 0.8, 1.0, Imgproc.THRESH_TOZERO);
 
-                final double tolerance = 0.9;
+                final double tolerance = 0.85;
 
                 while(true) {
 
