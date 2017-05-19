@@ -1,5 +1,6 @@
 package plu.teamtwo.rtm.genome.graph;
 
+import plu.teamtwo.rtm.core.async.GlobalThreadPool;
 import plu.teamtwo.rtm.genome.Genome;
 import plu.teamtwo.rtm.genome.GenomeCache;
 import plu.teamtwo.rtm.neural.ActivationFunction;
@@ -8,6 +9,11 @@ import plu.teamtwo.rtm.neural.SubstrateNetwork;
 import plu.teamtwo.rtm.neural.SubstrateNetworkBuilder;
 
 import java.util.Arrays;
+import java.util.LinkedList;
+import java.util.concurrent.Callable;
+import java.util.concurrent.ExecutionException;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Future;
 
 
 /**
@@ -15,6 +21,8 @@ import java.util.Arrays;
  * resulting SubstrateNetwork.
  */
 public class MultilayerSubstrateEncoding implements Genome {
+    /// Target number of jobs for weight calculations to be broken into.
+    private static final int TARGET_CPU_JOBS = Runtime.getRuntime().availableProcessors() * 2;
     /// Threshold for a link to be expressed
     private static final float LEO_THRESHOLD = 0.5f;
     /// Range of output used as a weight in substrate network, forms the range [-WIGHT_RANGE, +WEIGHT_RANGE]
@@ -65,11 +73,11 @@ public class MultilayerSubstrateEncoding implements Genome {
         final int inputs = maxTransDimen + 1; // add a bias node
         final int outputs = (layers.length - 1) * 2; //multiply by two for LEO extension
         GraphEncodingBuilder cppnBuilder = new GraphEncodingBuilder()
-                .inputs(inputs)
-                .outputs(outputs)
-                .randomActivations()
-                .inputFunction(ActivationFunction.LINEAR)
-                .outputFunction(ActivationFunction.SIGMOID);
+                                                   .inputs(inputs)
+                                                   .outputs(outputs)
+                                                   .randomActivations()
+                                                   .inputFunction(ActivationFunction.LINEAR)
+                                                   .outputFunction(ActivationFunction.SIGMOID);
 
         seedLEO(cppnBuilder, layers, inputs, outputs);
         connectInputs(cppnBuilder, layers, inputs, outputs);
@@ -332,7 +340,23 @@ public class MultilayerSubstrateEncoding implements Genome {
     public NeuralNetwork constructNeuralNetwork() {
         //calculate outputs of CPPN for each input output pairing and then use those for the network
 
-        final NeuralNetwork network = cppn.constructNeuralNetwork();
+        final ExecutorService threadPool = GlobalThreadPool.instance();
+        final LinkedList<Future<?>> futures = new LinkedList<>();
+
+        final NeuralNetwork[] networks = new NeuralNetwork[TARGET_CPU_JOBS];
+
+        {
+            LinkedList<Future<NeuralNetwork>> fnets = new LinkedList<>();
+            for(int i = 0; i < networks.length; ++i)
+                fnets.add(threadPool.submit(new Genome.ConstructNeuralNetwork(cppn)));
+
+            for(int i = 0; i < networks.length; ++i)
+                try {
+                    networks[i] = fnets.poll().get();
+                } catch(InterruptedException | ExecutionException e) {
+                    e.printStackTrace();
+                }
+        }
 
         final int numTransitions = layers.length - 1; //number of transitions between layers
         float[][][] weights = new float[numTransitions][][];
@@ -348,17 +372,88 @@ public class MultilayerSubstrateEncoding implements Genome {
             final int weightIndex = layer * 2;  //index in output of the weight for current layer
             final int leoIndex = layer * 2 + 1; //index in output of the link expression value for current layer
 
+            final int JOB_SIZE = Math.max(outputLayerSize / TARGET_CPU_JOBS, 1);
+
             weights[layer] = new float[outputLayerSize][inputLayerSize];
             final float[][] layerWeights = weights[layer];
 
             //for all outputs, construct a vector of input weights
-            for(int out = 0; out < outputLayerSize; ++out) {
+            for(int out = 0, netID = 0; out < outputLayerSize; out+=JOB_SIZE, netID++) {
+                futures.add(threadPool.submit(
+                        new Calculator(out, out+JOB_SIZE, inputLayerSize, leoIndex, weightIndex,
+                                              inputDimensions, outputDimensions, mappingProducts[layer],
+                                              layerWeights, networks[netID])
+                ));
+            }
+
+            while(!futures.isEmpty()) try {
+                futures.poll().get();
+            } catch(InterruptedException | ExecutionException e) {
+                e.printStackTrace();
+            }
+        }
+
+        //build the new network
+        return new SubstrateNetworkBuilder()
+                       .inputFunction(inputFunction)
+                       .outputFunction(outputFunction)
+                       .hiddenFunction(hiddenFunction)
+                       .layers(layers)
+                       .weights(weights)
+                       .create();
+    }
+
+
+    /**
+     * Designed to calculate the weight of a given edge.
+     */
+    private static class Calculator implements Runnable {
+        private int outStart, outEnd, inputLayerSize, leoIndex, weightIndex;
+        private int[] inputDimensions, outputDimensions, mappingProducts;
+        private float[][] layerWeights;
+        private NeuralNetwork network;
+
+
+        /**
+         * Creates a new calculator which will calculate the connection weights in the range [outStart, outEnd).
+         * It does perform bounds checking on outEnd.
+         *
+         * @param outStart         First output node to compute weights for.
+         * @param outEnd           One past the last output node to compute weights for.
+         * @param inputLayerSize   Number of nodes in the input layer.
+         * @param leoIndex         Location in the network output of the LEO.
+         * @param weightIndex      Location in the network output of the connection weight.
+         * @param inputDimensions  Vector of dimension boundaries for the input.
+         * @param outputDimensions Vector of dimension boundaries for the output.
+         * @param mappingProducts  Values used to map between the 1D and n-D spaces.
+         * @param layerWeights     Array of weights for the current layer, where the output of this will be stored.
+         * @param network          The network this can use to calculate the expected value.
+         */
+        Calculator(int outStart, int outEnd, int inputLayerSize, int leoIndex, int weightIndex, int[] inputDimensions,
+                   int[] outputDimensions, int[] mappingProducts, float[][] layerWeights, NeuralNetwork network) {
+            this.outStart = outStart;
+            this.outEnd = outEnd;
+            this.inputLayerSize = inputLayerSize;
+            this.leoIndex = leoIndex;
+            this.weightIndex = weightIndex;
+            this.inputDimensions = inputDimensions;
+            this.outputDimensions = outputDimensions;
+            this.mappingProducts = mappingProducts;
+            this.layerWeights = layerWeights;
+            this.network = network;
+        }
+
+
+        @Override
+        public void run() {
+            outEnd = Math.min(outEnd, layerWeights.length);
+            for(int out = outStart; out < outEnd; ++out) {
 
                 //for all inputs, calculate the weight to the output
                 for(int in = 0; in < inputLayerSize; ++in) {
                     //normalize the input and output coordinates to a value between -1 and 1 for all dimensions
-                    final float[] inpos = mapPosition(in, inputDimensions, mappingProducts[layer]);
-                    final float[] outpos = mapPosition(out, outputDimensions, mappingProducts[layer]);
+                    final float[] inpos = mapPosition(in, inputDimensions, mappingProducts);
+                    final float[] outpos = mapPosition(out, outputDimensions, mappingProducts);
 
                     //make sure we did not do a dumb since the copy may prevent errors from being pronounced
                     if(inpos.length != inputDimensions.length)
@@ -381,16 +476,8 @@ public class MultilayerSubstrateEncoding implements Genome {
                         layerWeights[out][in] = weight;
                     }
                 }
+
             }
         }
-
-        //build the new network
-        return new SubstrateNetworkBuilder()
-                .inputFunction(inputFunction)
-                .outputFunction(outputFunction)
-                .hiddenFunction(hiddenFunction)
-                .layers(layers)
-                .weights(weights)
-                .create();
     }
 }

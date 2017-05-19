@@ -1,12 +1,20 @@
 package plu.teamtwo.rtm.neural;
 
+import plu.teamtwo.rtm.core.async.GlobalThreadPool;
+
 import java.security.InvalidParameterException;
-import java.util.Arrays;
+import java.util.LinkedList;
+import java.util.concurrent.ExecutionException;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Future;
 
 /**
  * Represents a substrate network which has only a few outputs at definable coordinates.
  */
 public class SubstrateNetwork implements NeuralNetwork {
+    /// Target number of jobs for output calculations to be broken into.
+    private static final int TARGET_CPU_JOBS = 256;
+
     /// Defines the dimensions of each layer, e.g. d[0] = [2, 3] would define an input of 2 by 3 (output is final layer)
     ///  this also defines the mapping of the input arrays to the first substrate and so on.
     private final int[][] layers;
@@ -35,7 +43,7 @@ public class SubstrateNetwork implements NeuralNetwork {
         layers = builder.layers;
         weights = builder.weights;
 
-        inputFunction  = builder.inputFunction;
+        inputFunction = builder.inputFunction;
         outputFunction = builder.outputFunction;
         hiddenFunction = builder.hiddenFunction;
         useGPU = builder.useGPU;
@@ -171,6 +179,9 @@ public class SubstrateNetwork implements NeuralNetwork {
             for(int i = 0; i < inputs.length; ++i)
                 inputs[i] = inputFunction.calculate(inputs[i]);
 
+        ExecutorService threadPool = GlobalThreadPool.instance();
+        LinkedList<Future<?>> futures = new LinkedList<>();
+
         float[] last = inputs;
         float[] outputs = null;
 
@@ -178,25 +189,73 @@ public class SubstrateNetwork implements NeuralNetwork {
         // layer is the current input; don't run last layer, it is output
         for(int layer = 0; layer < (layers.length - 1); ++layer) {
             final float[][] layerWeights = weights[layer];
-            outputs = new float[layerSizes[layer + 1]];
+            final int outputSize = layerSizes[layer + 1];
+            final int JOB_SIZE = Math.max(outputSize / TARGET_CPU_JOBS, 1);
+            outputs = new float[outputSize];
 
             //for all the outputs, calculate the value based on all inputs and associated weights
-            for(int out = 0; out < layerSizes[layer + 1]; ++out) {
-                float sum = 0;
+            for(int out = 0; out < layerSizes[layer + 1]; out += JOB_SIZE) {
+                futures.add(threadPool.submit(new Calculator(out, out + JOB_SIZE, layer, last, outputs, layerWeights)));
+            }
+            //new Calculator(out, layer, last, outputs, layerWeights[out]).run();
 
-                //dot(input, weights[layer][out])
-                for(int in = 0; in < layerSizes[layer]; ++in)
-                    sum += last[in] * layerWeights[out][in];
-
-                outputs[out] = (layer == layers.length - 2) ?
-                                       outputFunction.calculate(sum) :
-                                       hiddenFunction.calculate(sum);
+            //Wait for all calculations to complete
+            while(!futures.isEmpty()) try {
+                futures.poll().get();
+            } catch(InterruptedException | ExecutionException e) {
+                e.printStackTrace();
             }
 
             last = outputs;
         }
 
         return outputs;
+    }
+
+
+    /**
+     * Calculator class used to compute output node values on the substrate.
+     */
+    private class Calculator implements Runnable {
+        private int outStart, outEnd, layer;
+        private float[] inputs, outputs;
+        private float[][] weights;
+
+
+        /**
+         * Creates a calculator which will compute output values [outStart, outEnd). Will do bounds checking on outEnd.
+         *
+         * @param outStart First output node to compute the value of.
+         * @param outEnd   Last output node to compute the value of.
+         * @param layer    Current layer.
+         * @param inputs   Input vector.
+         * @param outputs  Output vector.
+         * @param weights  Weight matrix.
+         */
+        Calculator(int outStart, int outEnd, int layer, float[] inputs, float[] outputs, float[][] weights) {
+            this.outStart = outStart;
+            this.outEnd = outEnd;
+            this.layer = layer;
+            this.inputs = inputs;
+            this.outputs = outputs;
+            this.weights = weights;
+        }
+
+
+        @Override
+        public void run() {
+            float sum = 0;
+            outEnd = Math.min(outputs.length, outEnd);
+            for(int out = outStart; out < outEnd; ++out) {
+                //dot(input, weights[layer][out])
+                for(int in = 0; in < layerSizes[layer]; ++in)
+                    sum += inputs[in] * weights[out][in];
+
+                outputs[out] = (layer == layers.length - 2) ?
+                                       outputFunction.calculate(sum) :
+                                       hiddenFunction.calculate(sum);
+            }
+        }
     }
 
 

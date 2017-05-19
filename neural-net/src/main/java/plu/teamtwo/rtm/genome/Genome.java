@@ -2,6 +2,8 @@ package plu.teamtwo.rtm.genome;
 
 import plu.teamtwo.rtm.neural.NeuralNetwork;
 
+import java.util.concurrent.Callable;
+
 public interface Genome {
     /**
      * Cross the genomes of two parents to create a child. This will take the disjoint and excess genes from the most
@@ -38,7 +40,7 @@ public interface Genome {
      *
      * @return A duplicate of the current instance.
      */
-    abstract Genome duplicate();
+    Genome duplicate();
 
 
     /**
@@ -46,7 +48,7 @@ public interface Genome {
      *
      * @return A new cache for the specific instance of Genome.
      */
-    abstract GenomeCache createCache();
+    GenomeCache createCache();
 
 
     /**
@@ -54,7 +56,7 @@ public interface Genome {
      *
      * @param cache Cached information about the genome.
      */
-    abstract void mutate(GenomeCache cache);
+    void mutate(GenomeCache cache);
 
 
     /**
@@ -68,7 +70,7 @@ public interface Genome {
      * @param average True if matching values should be averaged instead of randomly chosen.
      * @return A child which is the result of crossing the genomes
      */
-    public Genome crossMultipoint(GenomeCache cache, final float p1f, Genome p2, final float p2f, final boolean average);
+    Genome crossMultipoint(GenomeCache cache, final float p1f, Genome p2, final float p2f, final boolean average);
 
 
     /**
@@ -77,7 +79,7 @@ public interface Genome {
      * @param other The genome to compare this one against.
      * @return The compatibility distance.
      */
-    public abstract float compatibilityDistance(Genome other);
+    float compatibilityDistance(Genome other);
 
 
     /**
@@ -85,5 +87,23 @@ public interface Genome {
      *
      * @return The ANN represented by the genome.
      */
-    public abstract NeuralNetwork constructNeuralNetwork();
+    NeuralNetwork constructNeuralNetwork();
+
+
+    /**
+     * Construct a neural network given a Genome.
+     */
+    class ConstructNeuralNetwork implements Callable<NeuralNetwork> {
+        private final Genome genome;
+
+        public ConstructNeuralNetwork(Genome genome) {
+            this.genome = genome;
+        }
+
+
+        @Override
+        public NeuralNetwork call() throws Exception {
+            return genome.constructNeuralNetwork();
+        }
+    }
 }

@@ -143,12 +143,6 @@ public class GAController {
         sorted = false;
         //Construct a new thread pool
         final int MAX_THREADS = scoringFunction.getMaxThreads();
-//        ExecutorService threadPool = Executors.newFixedThreadPool(
-//                Math.min(
-//                        MAX_THREADS <= 0 ? 10000 : MAX_THREADS,
-//                        Runtime.getRuntime().availableProcessors() * 2
-//                )
-//        );
 
         //submit tasks to be run
         for(Species s : generation) {
@@ -160,15 +154,6 @@ public class GAController {
                 scoringFunction = scoringFunction.createNew();
             }
         }
-
-        //wait for all tasks to finish running
-//        threadPool.shutdown();
-//        try {
-//            while(!threadPool.awaitTermination(1, TimeUnit.MINUTES))
-//                /*Keep waiting*/ ;
-//        } catch(InterruptedException e) {
-//            threadPool.shutdownNow();
-//        }
 
         //Adjust the fitness values
         for(Species s : generation)
