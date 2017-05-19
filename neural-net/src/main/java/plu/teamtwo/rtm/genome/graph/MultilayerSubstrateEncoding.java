@@ -10,6 +10,7 @@ import plu.teamtwo.rtm.neural.SubstrateNetworkBuilder;
 
 import java.util.Arrays;
 import java.util.LinkedList;
+import java.util.concurrent.Callable;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Future;
@@ -339,12 +340,23 @@ public class MultilayerSubstrateEncoding implements Genome {
     public NeuralNetwork constructNeuralNetwork() {
         //calculate outputs of CPPN for each input output pairing and then use those for the network
 
-        final NeuralNetwork[] networks = new NeuralNetwork[TARGET_CPU_JOBS];
-        for(int i = 0; i < networks.length; ++i)
-            networks[i] = cppn.constructNeuralNetwork();
-
         final ExecutorService threadPool = GlobalThreadPool.instance();
         final LinkedList<Future<?>> futures = new LinkedList<>();
+
+        final NeuralNetwork[] networks = new NeuralNetwork[TARGET_CPU_JOBS];
+
+        {
+            LinkedList<Future<NeuralNetwork>> fnets = new LinkedList<>();
+            for(int i = 0; i < networks.length; ++i)
+                fnets.add(threadPool.submit(new Genome.ConstructNeuralNetwork(cppn)));
+
+            for(int i = 0; i < networks.length; ++i)
+                try {
+                    networks[i] = fnets.poll().get();
+                } catch(InterruptedException | ExecutionException e) {
+                    e.printStackTrace();
+                }
+        }
 
         final int numTransitions = layers.length - 1; //number of transitions between layers
         float[][][] weights = new float[numTransitions][][];
