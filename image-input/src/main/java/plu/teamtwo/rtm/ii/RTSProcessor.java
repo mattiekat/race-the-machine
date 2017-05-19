@@ -33,6 +33,11 @@ public class RTSProcessor {
     private ConcurrentLinkedQueue<ProcessedData> cap_queue = new ConcurrentLinkedQueue<>();
 
     private final Mat[] numtemps = new Mat[10];
+    private Mat[] numtempsScaled = new Mat[10];
+
+    private Point numBoundsMin = null;
+    private Point numBoundsMax = null;
+    private final Object numBoundsSwitchLock = new Object();
 
     public RTSProcessor() {this(new ScreenCap()); }
     public RTSProcessor(ScreenCap capper) {
@@ -53,7 +58,25 @@ public class RTSProcessor {
             throw new RuntimeException("FileNotFoundException: " + ex.getMessage());
         }
 
-        if(numtemps[0].empty()) throw new NullPointerException();
+        scaleTemps();
+    }
+
+    private void scaleTemps() {
+
+        // Original Resolution for the number templates was 1920x1080
+        double scaleX = (double)capper.getArea().width / 1920.0;
+        double scaleY = (double)capper.getArea().height / 1080.0;
+        System.out.println("Scale x:" + scaleX + ", y:" + scaleY);
+
+        for(int i = 0; i < 10; i++) {
+            if(numtemps[i].empty())
+                System.err.println("Empty Img "+i);
+            numtempsScaled[i] = new Mat();
+            System.out.println(i + " - cols:" + numtemps[i].cols() + ", rows:" + numtemps[i].rows());
+            Size size = new Size(numtemps[i].cols()*scaleX, numtemps[i].rows()*scaleY);
+            System.out.println(i + " - width:" + size.width + ", height:" + size.height);
+            Imgproc.resize(numtemps[i], numtempsScaled[i], size);
+        }
     }
 
     private Mat loadFromJar(String name, int flags) throws FileNotFoundException {
@@ -153,6 +176,14 @@ public class RTSProcessor {
     public void setCapper(ScreenCap capper) {
         synchronized(capSwitchLock) {
             this.capper = capper;
+        }
+        scaleTemps();
+    }
+
+    public void setNumBounds(Point min, Point max) {
+        synchronized(numBoundsSwitchLock) {
+            this.numBoundsMin = min;
+            this.numBoundsMax = max;
         }
     }
 
@@ -311,13 +342,26 @@ public class RTSProcessor {
 
         private int parseScore(Mat input) {
 
+            Rect rectCrop;
+            synchronized(numBoundsSwitchLock) {
+                if(numBoundsMin == null || numBoundsMax == null) return -1;
+                rectCrop = new Rect(
+                        numBoundsMin.x.intValue() - capper.getArea().x,
+                        numBoundsMin.y.intValue() - capper.getArea().y,
+                        (numBoundsMax.x.intValue() - numBoundsMin.x.intValue() + 1),
+                        (numBoundsMax.y.intValue() - numBoundsMin.y.intValue() + 1));
+            }
+            //System.out.println("rectCrop - X:"+rectCrop.x + ", Y:"+rectCrop.y + ", width:"+rectCrop.width + ", height:"+rectCrop.height);
+            //System.out.println("input - X:"+input.rows() + ", Y:"+input.cols());
+            Mat cropped = input.submat(rectCrop);
+
             TreeMap<Double, Integer> numbers = new TreeMap<>(Collections.reverseOrder());
 
             for(int i = 0; i < 10; i++) {
 
-                Mat result = new Mat(input.rows() - numtemps[i].rows() + 1, input.cols() - numtemps[i].cols() + 1, CvType.CV_32FC1);
+                Mat result = new Mat(cropped.rows() - numtempsScaled[i].rows() + 1, cropped.cols() - numtempsScaled[i].cols() + 1, CvType.CV_32FC1);
 
-                Imgproc.matchTemplate(input, numtemps[i], result, Imgproc.TM_CCOEFF_NORMED);
+                Imgproc.matchTemplate(cropped, numtempsScaled[i], result, Imgproc.TM_CCOEFF_NORMED);
                 Imgproc.threshold(result, result, 0.8, 1.0, Imgproc.THRESH_TOZERO);
 
                 final double tolerance = 0.9;
