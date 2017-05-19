@@ -2,6 +2,7 @@ package plu.teamtwo.rtm.client.gui;
 
 import com.ojcoleman.ahni.hyperneat.Run;
 import plu.teamtwo.rtm.client.InputController;
+import plu.teamtwo.rtm.client.scratch.RTSHyperNeat;
 import plu.teamtwo.rtm.ii.RTSProcessor;
 
 import plu.teamtwo.rtm.core.util.Point;
@@ -200,7 +201,7 @@ public class ImagePanel extends JPanel implements MouseListener, ActionListener 
         }
 
         if(e.getSource() == startScratchMenuItem) {
-
+            new Thread(new RTSHyperNeat()).start();
         }
     }
 }

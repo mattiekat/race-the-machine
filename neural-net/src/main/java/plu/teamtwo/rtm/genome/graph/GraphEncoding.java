@@ -19,15 +19,15 @@ public class GraphEncoding implements Genome {
     /// Chance that an edge weight which is being mutated will be reinitialized.
     private static final float MUTATE_RESET_WEIGHT = 0.10f;
     /// Chance for a new edge to be added to the system.
-    private static final float MUTATE_NEW_EDGE = 0.05f;
+    private static final float MUTATE_NEW_EDGE = 0.1f;
     // Number of times it should try to mutate a new edge
     private static final int MUTATE_NEW_EDGE_TRIES = 30;
     /// Chance for a node to be added to the system.
-    private static final float MUTATE_NEW_NODE = 0.03f;
+    private static final float MUTATE_NEW_NODE = 0.06f;
     /// Chance to mutate the traits of a node. e.g. change the activation function.
-    private static final float MUTATE_NODE_TRAITS = 0.05f;
+    private static final float MUTATE_NODE_TRAITS = 0.1f;
     /// Chance for an edge's enabled status to be flipped.
-    private static final float MUTATE_EDGE_TOGGLE = 0.04f;
+    private static final float MUTATE_EDGE_TOGGLE = 0.1f;
     /// True if the genome is allowed to mutate recurrent edges
     private static final boolean MUTATE_RECURRENT_EDGES = true;
     /// Chance to disable an edge if either parent had it disabled.

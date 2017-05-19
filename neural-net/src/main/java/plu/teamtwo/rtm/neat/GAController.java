@@ -20,15 +20,15 @@ import static plu.teamtwo.rtm.core.util.Rand.*;
  */
 public class GAController {
     /// Size of the total population.
-    private static final int POPULATION_SIZE = 64;
+    private static final int POPULATION_SIZE = 32;
     /// Number of generations a species can show no improvement before being removed.
-    private static final int GENERATIONS_BEFORE_REMOVAL = 15;
+    private static final int GENERATIONS_BEFORE_REMOVAL = 10;
     /// Minimum number of new members in the next generation of a species which has not been removed.
     private static final int MINIMUM_BREEDING_ALLOWANCE = 1;
     /// Chance for two individuals from different species to be mated.
     private static final float INTERSPECIES_MATING_RATE = 0.001f;
     /// Number of individuals required in a species to keep the leader unchanged from one generation to the next.
-    private static final int SPECIES_SIZE_TO_PROTECT_LEADER = 5;
+    private static final int SPECIES_SIZE_TO_PROTECT_LEADER = 4;
     /// Percent of children in the next generation which are produced by crossover.
     private static final float BREEDING_CROSSOVER_RATE = 0.75f;
     /// Percent change of using Multipoint crossover; will use MULTIPOINT_AVG if not this.
