@@ -62,6 +62,20 @@ public class MultilayerSubstrateEncodingTest {
 
 
         /**
+         * This will be called to determine if the neural network should use the step function instead of calculate. Step
+         * may perform better on real-time tasks because it allows some carry over between steps, but will fail on discrete
+         * input output pairs such as XOR. If this is enabled, flush should be disabled or values may not make it to
+         * outputs.
+         *
+         * @return True if the network should use real time processing.
+         */
+        @Override
+        public boolean realTimeProcessing() {
+            return false;
+        }
+
+
+        /**
          * This function will be called to retrieve the inputs which should be used by the network. This will be called
          * until it returns null, signaling the end of inputs.
          *

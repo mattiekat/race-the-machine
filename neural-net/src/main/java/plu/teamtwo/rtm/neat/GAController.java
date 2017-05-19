@@ -397,12 +397,20 @@ public class GAController {
         @Override
         public void run() {
             NeuralNetwork network = individual.genome.constructNeuralNetwork();
+            final boolean realTimeProcessing = scoringFunction.realTimeProcessing();
             final boolean flushBetween = scoringFunction.flushBetween();
 
             float[] input;
+
             while((input = scoringFunction.generateInput()) != null) {
                 if(flushBetween) network.flush();
-                float[] output = network.calculate(input);
+                float[] output;
+
+                if(realTimeProcessing)
+                    output = network.step(input);
+                else
+                    output = network.calculate(input);
+
                 scoringFunction.acceptOutput(output);
             }
 

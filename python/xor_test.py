@@ -29,6 +29,9 @@ class XORScorePy(object):
     def flushBetween(self):
         return True
 
+    def realTimeProcessing(self):
+        return False
+
     def generateInput(self):
         j_inputs = None
         if self.last < 4:

@@ -22,6 +22,9 @@ class ScoreFunction(object):
     def flushBetween(self):
         return True
 
+    def realTimeProcessing(self):
+        return True
+
     def generateInput(self):
         j_inputs = None
         if not self.done:

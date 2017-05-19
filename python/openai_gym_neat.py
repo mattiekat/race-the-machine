@@ -12,7 +12,7 @@ from py4j.java_gateway import JavaGateway, CallbackServerParameters
 # MountainCarContinuous-v0
 # Pendulum-v0
 
-ENVIROMENT = 'BipedalWalkerHardcore-v2'
+ENVIROMENT = 'LunarLanderContinuous-v2'
 
 
 class ScoreFunction(object):
@@ -29,6 +29,9 @@ class ScoreFunction(object):
         return 1
 
     def flushBetween(self):
+        return not self.realTimeProcessing()
+
+    def realTimeProcessing(self):
         return True
 
     def generateInput(self):
@@ -61,6 +64,7 @@ class ScoreFunction(object):
         self.steps += 1
 
     def getScore(self):
+        print("\tScore: {:.2f}, Steps {}".format(self.score, self.steps))
         return self.score
 
     def isWinner(self):
@@ -87,7 +91,7 @@ if __name__ == '__main__':
 
     print("Inputs: {}, Outputs: {}, Discrete: {}, Winning Score: {}".format(INPUT_SIZE, OUTPUT_SIZE, DISCRETE, WINNING_SCORE))
 
-    gateway.entry_point.init(gateway.jvm.plu.teamtwo.rtm.genome.graph.GraphEncodingBuilder().inputs(INPUT_SIZE).outputs(OUTPUT_SIZE))
+    gateway.entry_point.init(gateway.jvm.plu.teamtwo.rtm.genome.graph.GraphEncodingBuilder().inputs(INPUT_SIZE).outputs(OUTPUT_SIZE).randomActivations())
     controller = gateway.entry_point.getController()
     controller.createFirstGeneration()
 

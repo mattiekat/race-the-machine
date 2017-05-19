@@ -22,6 +22,8 @@ public class GraphEncodingBuilder implements GenomeBuilder {
 
     /// Should the genome be able to randomize its activation functions (except for output nodes)?
     boolean randomActivations = false;
+    /// Use the step stepping function instead of the calculate function
+    boolean realTimeProcessing = false;
     List<ActivationFunction> hiddenNodes = new LinkedList<>();
     List<Triple<Integer, Integer, Float>> initialConnections = null;
 
@@ -54,6 +56,15 @@ public class GraphEncodingBuilder implements GenomeBuilder {
      */
     public GraphEncodingBuilder randomActivations() {
         randomActivations = true;
+        return this;
+    }
+
+
+    /**
+     * Use the step function of the network rather than calculate. This does not work for discrete input output pairs.
+     */
+    public GraphEncodingBuilder realTimeProcessing() {
+        realTimeProcessing = true;
         return this;
     }
 
