@@ -58,6 +58,11 @@ public class InputController {
         }
     }
 
+    public void resetInputs() {
+        for(Key key : Key.values())
+            pressedKeys[key.ordinal()] = false;
+    }
+
     public void setStartButtonPosition(Point position) {
         this.startButtonPosition = position;
     }
@@ -82,13 +87,15 @@ public class InputController {
         if(!gameRunning) return;
         long ct = System.currentTimeMillis();
         if(score < 0) {
-            if((ct - lastScoreUpdate) > 5000) {
+            if((ct - lastScoreUpdate) > 8000) {
                 gameRunning = false;
+                resetInputs();
+                updateInputs();
             }
         } else {
             this.score = score;
+            lastScoreUpdate = ct;
         }
-        lastScoreUpdate = ct;
     }
 
 

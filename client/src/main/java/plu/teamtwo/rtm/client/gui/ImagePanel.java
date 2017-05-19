@@ -30,8 +30,11 @@ public class ImagePanel extends JPanel implements MouseListener, ActionListener 
     private final JPopupMenu contextMenu;
     private Point contextPosition = null;
     private final JMenuItem setStartClickMenuItem;
+    private final JMenuItem setScoreBoxMenuItem;
+    private final JMenuItem startMenuItem;
 
     private Point startButtonPosition = new Point();
+    private boolean scoreBoxGrabbing = false;
 
     public ImagePanel(RTSProcessor rtsp) {
         this.rtsp = rtsp;
@@ -44,6 +47,13 @@ public class ImagePanel extends JPanel implements MouseListener, ActionListener 
         setStartClickMenuItem = new JMenuItem("Set Start Button Position");
         setStartClickMenuItem.addActionListener(this);
         contextMenu.add(setStartClickMenuItem);
+        setScoreBoxMenuItem = new JMenuItem("Select Score Box Position");
+        setScoreBoxMenuItem.addActionListener(this);
+        contextMenu.add(setScoreBoxMenuItem);
+        contextMenu.addSeparator();
+        startMenuItem = new JMenuItem("Start a Run");
+        startMenuItem.addActionListener(this);
+        contextMenu.add(startMenuItem);
     }
 
     public void setContents(BufferedImage img, List<Polygon> polygons, int score) {
@@ -107,7 +117,7 @@ public class ImagePanel extends JPanel implements MouseListener, ActionListener 
         g.fillOval(startButtonPosition.x.intValue()-10, startButtonPosition.y.intValue()-10, 20, 20);
 
         g.setFont(FPS_FONT);
-        String fpsStr = ""+rtsp.getFPS() + ":" + (polygons == null ? -1 : polygons.size() + ":" + score);
+        String fpsStr = ""+rtsp.getFPS() + ":" + (polygons == null ? -1 : polygons.size() + ":" + score + ":" + InputController.getInstance().isGameRunning());
         g.setColor(Color.BLACK);
         g.fillRect(6, 6, 50, 40);
         g.setColor(Color.YELLOW);
@@ -117,12 +127,11 @@ public class ImagePanel extends JPanel implements MouseListener, ActionListener 
             java.awt.Point p = getMousePosition();
             if(p != null) {
                 g.setColor(Color.MAGENTA);
-                g.drawRect(
-                        Math.min(firstClick.x.intValue(), p.x),
-                        Math.min(firstClick.y.intValue(), p.y),
-                        Math.max(firstClick.x.intValue(), p.x),
-                        Math.max(firstClick.y.intValue(), p.y)
-                );
+                int xMin = Math.min(firstClick.x.intValue(), p.x);
+                int yMin = Math.min(firstClick.y.intValue(), p.y);
+                int xMax = Math.max(firstClick.x.intValue(), p.x);
+                int yMax = Math.max(firstClick.y.intValue(), p.y);
+                g.drawRect(xMin, yMin, xMax-xMin, yMax-yMin);
             }
         }
     }
@@ -148,13 +157,16 @@ public class ImagePanel extends JPanel implements MouseListener, ActionListener 
             Point secondClick = new Point(e.getX(), e.getY());
             double xMod = fullSize.getWidth() / this.getWidth();
             double yMod = fullSize.getHeight() / this.getHeight();
-            ScreenCap capper = new ScreenCap(
-                    (int)(Math.min(firstClick.x.doubleValue(), secondClick.x.doubleValue()) * xMod),
-                    (int)(Math.min(firstClick.y.doubleValue(), secondClick.y.doubleValue()) * yMod),
-                    (int)(Math.max(firstClick.x.doubleValue(), secondClick.x.doubleValue()) * xMod),
-                    (int)(Math.max(firstClick.y.doubleValue(), secondClick.y.doubleValue()) * yMod)
-            );
-            rtsp.setCapper(capper);
+            int xMin = (int)(Math.min(firstClick.x.doubleValue(), secondClick.x.doubleValue()) * xMod);
+            int yMin = (int)(Math.min(firstClick.y.doubleValue(), secondClick.y.doubleValue()) * yMod);
+            int xMax = (int)(Math.max(firstClick.x.doubleValue(), secondClick.x.doubleValue()) * xMod);
+            int yMax = (int)(Math.max(firstClick.y.doubleValue(), secondClick.y.doubleValue()) * yMod);
+            if(scoreBoxGrabbing) {
+                rtsp.setNumBounds(new Point(xMin, yMin), new Point(xMax, yMax));
+            } else {
+                ScreenCap capper = new ScreenCap(xMin, yMin, xMax-xMin, yMax-yMin);
+                rtsp.setCapper(capper);
+            }
             firstClick = null;
         }
     }
@@ -172,6 +184,16 @@ public class ImagePanel extends JPanel implements MouseListener, ActionListener 
             double xMod = fullSize.getWidth() / this.getWidth();
             double yMod = fullSize.getHeight() / this.getHeight();
             InputController.getInstance().setStartButtonPosition(new Point((int)(startButtonPosition.x.doubleValue()*xMod), (int)(startButtonPosition.y.doubleValue()*yMod)));
+        }
+
+        if(e.getSource() == setScoreBoxMenuItem) {
+            scoreBoxGrabbing = true;
+        }
+
+        if(e.getSource() == startMenuItem) {
+            InputController.getInstance().startGame();
+            InputController.getInstance().setPressed(InputController.Key.LEFT, true);
+            InputController.getInstance().updateInputs();
         }
     }
 }
