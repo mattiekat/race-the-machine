@@ -12,7 +12,7 @@ import java.util.concurrent.Future;
  * Represents a substrate network which has only a few outputs at definable coordinates.
  */
 public class SubstrateNetwork implements NeuralNetwork {
-    /// Target number of jobs for weight calculations to be broken into.
+    /// Target number of jobs for output calculations to be broken into.
     private static final int TARGET_CPU_JOBS = 256;
 
     /// Defines the dimensions of each layer, e.g. d[0] = [2, 3] would define an input of 2 by 3 (output is final layer)
