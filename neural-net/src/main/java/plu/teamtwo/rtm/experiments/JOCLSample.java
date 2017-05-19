@@ -40,7 +40,7 @@ public class JOCLSample implements Runnable {
         // The platform, device type and device number
         // that will be used
         final int platformIndex = 0;
-        final long deviceType = CL_DEVICE_TYPE_ALL;
+        final long deviceType = CL_DEVICE_TYPE_GPU;
         final int deviceIndex = 0;
 
         // Enable exceptions and subsequently omit error checks in this sample
@@ -71,7 +71,7 @@ public class JOCLSample implements Runnable {
         cl_device_id device = devices[deviceIndex];
 
         // Create a context for the selected device
-        cl_context context = clCreateContextFromType(contextProperties, CL_DEVICE_TYPE_GPU, null, null, null);
+        cl_context context = clCreateContextFromType(contextProperties, deviceType, null, null, null);
 
         // Create a command-queue for the selected device
         cl_command_queue commandQueue =

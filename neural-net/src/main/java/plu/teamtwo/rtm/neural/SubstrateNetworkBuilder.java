@@ -16,6 +16,8 @@ public class SubstrateNetworkBuilder implements NeuralNetworkBuilder {
     /// Activation function to use for hidden nodes on the substrate.
     ActivationFunction hiddenFunction = ActivationFunction.SIGMOID;
 
+    boolean useGPU = false;
+
 
     /**
      * Create a new neural network given the internal settings.
@@ -80,6 +82,16 @@ public class SubstrateNetworkBuilder implements NeuralNetworkBuilder {
      */
     public SubstrateNetworkBuilder hiddenFunction(ActivationFunction fn) {
         this.hiddenFunction = fn;
+        return this;
+    }
+
+
+    /**
+     * Use the GPU to speed up calculation of the substrate network.
+     * @return
+     */
+    public SubstrateNetworkBuilder useGPU() {
+        this.useGPU = true;
         return this;
     }
 }
