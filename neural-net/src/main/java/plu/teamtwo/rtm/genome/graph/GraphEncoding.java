@@ -185,7 +185,7 @@ public class GraphEncoding implements Genome {
 
         //TODO: account for different traits/activation functions of nodes
 
-        final float n = 1.0f; //disjoint + excess + matching; //TODO: re-enable normalizing the distance?
+        final float n = disjoint + excess + matching;
         float distance = matchingDiff * DISTANCE_WEIGHT_DIFFERENCE_COST;
         distance += ((float) excess / n) * DISTANCE_EXCESS_COST;
         distance += ((float) disjoint / n) * DISTANCE_DISJOINT_COST;

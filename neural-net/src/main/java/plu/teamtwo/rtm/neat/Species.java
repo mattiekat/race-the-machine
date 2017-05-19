@@ -8,7 +8,7 @@ import static plu.teamtwo.rtm.core.util.Rand.getRandomNum;
 
 class Species implements Iterable<Individual> {
     /// Threshold used in compatibility distance to determine if two individuals are in the same species (δt).
-    private static final float COMPATIBILITY_THRESHOLD = 3.0f;
+    private static final float COMPATIBILITY_THRESHOLD = 3.5f;
 
     final int speciesID;
     final int parentSpeciesID;

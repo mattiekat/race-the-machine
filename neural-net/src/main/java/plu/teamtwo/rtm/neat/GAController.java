@@ -35,7 +35,7 @@ public class GAController {
     private static final float BREEDING_CROSSOVER_MULTIPOINT = 0.6f;
     //private static final float BREEDING_CROSSOVER_MULTIPOINT_AVG = 0.4f;
     /// The percentage of a species which will make it to the breeding phase.
-    private static final float BREEDING_SURVIVAL_THRESHOLD = 0.20f;
+    private static final float BREEDING_SURVIVAL_THRESHOLD = 0.30f;
     /// Desired number of species.
     private static final int TARGET_NUMBER_OF_SPECIES = 5;
 
