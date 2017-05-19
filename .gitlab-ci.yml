@@ -18,17 +18,3 @@ test:
     - ./gradlew -g /cache/.gradle pythonTest
   tags:
     - gradle
-
-pages:
-  stage: deploy
-  script:
-    - ./gradlew -g /cache/.gradle javadoc
-  artifacts:
-    paths:
-      - image-input/build/docs/javadoc
-      - neural-net/build/docs/javadoc
-  only:
-    - master
-    - dev
-  tags:
-    - gradle
