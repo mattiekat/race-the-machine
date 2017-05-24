@@ -20,7 +20,7 @@ import static plu.teamtwo.rtm.core.util.Rand.*;
  */
 public class GAController {
     /// Size of the total population.
-    private static final int POPULATION_SIZE = 32;
+    private static final int POPULATION_SIZE = 64;
     /// Number of generations a species can show no improvement before being removed.
     private static final int GENERATIONS_BEFORE_REMOVAL = 10;
     /// Minimum number of new members in the next generation of a species which has not been removed.
@@ -35,7 +35,7 @@ public class GAController {
     private static final float BREEDING_CROSSOVER_MULTIPOINT = 0.6f;
     //private static final float BREEDING_CROSSOVER_MULTIPOINT_AVG = 0.4f;
     /// The percentage of a species which will make it to the breeding phase.
-    private static final float BREEDING_SURVIVAL_THRESHOLD = 0.30f;
+    private static final float BREEDING_SURVIVAL_THRESHOLD = 0.20f;
     /// Desired number of species.
     private static final int TARGET_NUMBER_OF_SPECIES = 5;
 
@@ -174,6 +174,7 @@ public class GAController {
         sortByFitness();
         cache.newGeneration();
 
+        //TODO: do not remove top performing species even if they are not getting better
         //remove any non-improving species (prefer removing worst performers first)
         for(ListIterator<Species> i = generation.listIterator(generation.size() - 1);
             i.hasPrevious() && (generation.size() > TARGET_NUMBER_OF_SPECIES); )
