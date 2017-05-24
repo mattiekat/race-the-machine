@@ -366,24 +366,16 @@ public class MultilayerSubstrateEncoding implements Genome {
             final int inputLayerSize = layerSizes[layer];       //number of nodes on input substrate
             final int outputLayerSize = layerSizes[layer + 1];  //number of nodes on output substrate
 
-            final int[] inputDimensions = layers[layer];
-            final int[] outputDimensions = layers[layer + 1];
-
-            final int weightIndex = layer * 2;  //index in output of the weight for current layer
-            final int leoIndex = layer * 2 + 1; //index in output of the link expression value for current layer
-
-            final int JOB_SIZE = Math.max(outputLayerSize / TARGET_CPU_JOBS, 1);
+            final int JOB_SIZE = (outputLayerSize / TARGET_CPU_JOBS) + 1;
 
             weights[layer] = new float[outputLayerSize][inputLayerSize];
             final float[][] layerWeights = weights[layer];
 
             //for all outputs, construct a vector of input weights
-            for(int out = 0, netID = 0; out < outputLayerSize; out+=JOB_SIZE, netID++) {
-                futures.add(threadPool.submit(
-                        new Calculator(out, out+JOB_SIZE, inputLayerSize, leoIndex, weightIndex,
-                                              inputDimensions, outputDimensions, mappingProducts[layer],
-                                              layerWeights, networks[netID])
-                ));
+            for(int out = 0, netID = 0; out < outputLayerSize; out += JOB_SIZE, netID++) {
+                //futures.add(threadPool.submit(
+                new Calculator(layer, out, out + JOB_SIZE, layerWeights, networks[netID]).run();
+                //));
             }
 
             while(!futures.isEmpty()) try {
@@ -407,38 +399,26 @@ public class MultilayerSubstrateEncoding implements Genome {
     /**
      * Designed to calculate the weight of a given edge.
      */
-    private static class Calculator implements Runnable {
-        private int outStart, outEnd, inputLayerSize, leoIndex, weightIndex;
-        private int[] inputDimensions, outputDimensions, mappingProducts;
-        private float[][] layerWeights;
+    private class Calculator implements Runnable {
+        private final int layer;
+        private int outStart, outEnd;
         private NeuralNetwork network;
+        private float[][] layerWeights;
 
 
         /**
          * Creates a new calculator which will calculate the connection weights in the range [outStart, outEnd).
          * It does perform bounds checking on outEnd.
          *
-         * @param outStart         First output node to compute weights for.
-         * @param outEnd           One past the last output node to compute weights for.
-         * @param inputLayerSize   Number of nodes in the input layer.
-         * @param leoIndex         Location in the network output of the LEO.
-         * @param weightIndex      Location in the network output of the connection weight.
-         * @param inputDimensions  Vector of dimension boundaries for the input.
-         * @param outputDimensions Vector of dimension boundaries for the output.
-         * @param mappingProducts  Values used to map between the 1D and n-D spaces.
-         * @param layerWeights     Array of weights for the current layer, where the output of this will be stored.
-         * @param network          The network this can use to calculate the expected value.
+         * @param layer    Input layer this is processing the outputs for.
+         * @param outStart First output node to compute weights for.
+         * @param outEnd   One past the last output node to compute weights for.
+         * @param network  The network this can use to calculate the expected value.
          */
-        Calculator(int outStart, int outEnd, int inputLayerSize, int leoIndex, int weightIndex, int[] inputDimensions,
-                   int[] outputDimensions, int[] mappingProducts, float[][] layerWeights, NeuralNetwork network) {
+        Calculator(int layer, int outStart, int outEnd, float[][] layerWeights, NeuralNetwork network) {
+            this.layer = layer;
             this.outStart = outStart;
             this.outEnd = outEnd;
-            this.inputLayerSize = inputLayerSize;
-            this.leoIndex = leoIndex;
-            this.weightIndex = weightIndex;
-            this.inputDimensions = inputDimensions;
-            this.outputDimensions = outputDimensions;
-            this.mappingProducts = mappingProducts;
             this.layerWeights = layerWeights;
             this.network = network;
         }
@@ -446,14 +426,22 @@ public class MultilayerSubstrateEncoding implements Genome {
 
         @Override
         public void run() {
-            outEnd = Math.min(outEnd, layerWeights.length);
+            final int inputLayerSize  = layerSizes[layer];       //number of nodes on input substrate
+            final int outputLayerSize = layerSizes[layer + 1];  //number of nodes on output substrate
+            final int weightIndex = layer * 2;  //index in output of the weight for current layer
+            final int leoIndex = layer * 2 + 1; //index in output of the link expression value for current layer
+            final int[] inputDimensions = layers[layer];
+            final int[] outputDimensions = layers[layer + 1];
+            final int[] layerMappingProducts = mappingProducts[layer];
+
+            outEnd = Math.min(outEnd, outputLayerSize);
             for(int out = outStart; out < outEnd; ++out) {
+                final float[] outpos = mapPosition(out, outputDimensions, layerMappingProducts);
 
                 //for all inputs, calculate the weight to the output
                 for(int in = 0; in < inputLayerSize; ++in) {
                     //normalize the input and output coordinates to a value between -1 and 1 for all dimensions
-                    final float[] inpos = mapPosition(in, inputDimensions, mappingProducts);
-                    final float[] outpos = mapPosition(out, outputDimensions, mappingProducts);
+                    final float[] inpos = mapPosition(in, inputDimensions, layerMappingProducts);
 
                     //make sure we did not do a dumb since the copy may prevent errors from being pronounced
                     if(inpos.length != inputDimensions.length)
@@ -468,6 +456,7 @@ public class MultilayerSubstrateEncoding implements Genome {
                     combpos[combpos.length - 1] = 1; //set bias
 
                     //get the outputs of the network, then check for LEO and if above threshold, use the weight
+                    network.flush();
                     final float[] outputs = network.calculate(combpos);
                     if(outputs[leoIndex] > LEO_THRESHOLD) {
                         float weight = outputs[weightIndex];
