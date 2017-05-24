@@ -7,6 +7,8 @@ import plu.teamtwo.rtm.core.util.Point;
 import java.awt.*;
 import java.awt.event.InputEvent;
 import java.awt.event.KeyEvent;
+import java.util.Random;
+import java.util.concurrent.ThreadLocalRandom;
 
 public class InputController {
 
@@ -73,11 +75,15 @@ public class InputController {
     }
 
     public void startGame() {
-        robot.mouseMove(startButtonPosition.x.intValue(), startButtonPosition.y.intValue());
+        robot.mouseMove(
+                startButtonPosition.x.intValue() + ThreadLocalRandom.current().nextInt(-20, 20),
+                startButtonPosition.y.intValue() + ThreadLocalRandom.current().nextInt(-20, 20));
         robot.mousePress(InputEvent.BUTTON1_DOWN_MASK);
+        try { Thread.sleep(100); } catch(InterruptedException ex) {}
         robot.mouseRelease(InputEvent.BUTTON1_DOWN_MASK);
         gameRunning = true;
         lastScoreUpdate = System.currentTimeMillis();
+        try { Thread.sleep(100); } catch(InterruptedException ex) {}
     }
 
     public boolean isGameRunning() {

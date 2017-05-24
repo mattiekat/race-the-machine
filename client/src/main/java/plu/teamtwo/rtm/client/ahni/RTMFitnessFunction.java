@@ -35,7 +35,6 @@ public class RTMFitnessFunction extends HyperNEATFitnessFunction implements RTSP
     public void init(Properties props){
         super.init(props);
 
-        System.out.println( " ---- INITIALIZING ---- ");
         createPointArray(inputWidth, inputHeight);
 
     }
@@ -46,7 +45,6 @@ public class RTMFitnessFunction extends HyperNEATFitnessFunction implements RTSP
 
         substrate = activator;
 
-        System.out.println( " ---- EVALUATION STARTED ---- ");
         Main.rtsp.addListener(this);
         InputController.getInstance().startGame();
 
@@ -62,10 +60,11 @@ public class RTMFitnessFunction extends HyperNEATFitnessFunction implements RTSP
             }
         }
 
-        System.out.println( " ---- EVALUATION ENDED ---- ");
         Main.rtsp.removeListener(this);
 
-        return Math.min(1.0, InputController.getInstance().getScore() / 500000000.0);
+        double fitness = Math.min(1.0, InputController.getInstance().getScore() / 500000000.0);
+        genotype.setPerformanceValue(fitness);
+        return fitness;
     }
 
     private void createPointArray(int screenWidth, int screenHeight){
@@ -83,10 +82,19 @@ public class RTMFitnessFunction extends HyperNEATFitnessFunction implements RTSP
 
     }
 
+    private Thread runningThread = null;
+    private final Object runningThreadLock = new Object();
+
     @Override
     public void frameProcessed(ProcessedData data) {
         //called everytime there's shapes
         //check when game is over, wake thread up
+
+        // Check to make sure previous series is finished
+        synchronized(runningThreadLock) {
+            if (runningThread != null) return;
+        }
+
         double [][] input = new double[inputWidth][inputHeight];
       
         for(int i = 0; i < input.length; i++){
@@ -99,27 +107,38 @@ public class RTMFitnessFunction extends HyperNEATFitnessFunction implements RTSP
             }
         }
 
-        double[][] output = substrate.next(input);
+        RTMFitnessFunction ff = this;
+        synchronized(runningThreadLock) {
+            runningThread = new Thread(() -> {
+                double[][] output = substrate.next(input);
 
-        // Left
-        InputController.getInstance().setPressed(InputController.Key.LEFT, output[0][0] > 0.5);
+                // Left
+                InputController.getInstance().setPressed(InputController.Key.LEFT, output[0][0] > 0.5 && output[0][0] > output[0][2]);
 
-        // Space
-        InputController.getInstance().setPressed(InputController.Key.SPACE, output[0][1] > 0.5);
+                // Space
+                InputController.getInstance().setPressed(InputController.Key.SPACE, output[0][1] > 0.5);
 
-        // Right
-        InputController.getInstance().setPressed(InputController.Key.RIGHT, output[0][2] > 0.5);
+                // Right
+                InputController.getInstance().setPressed(InputController.Key.RIGHT, output[0][2] > 0.5 && output[0][2] > output[0][0]);
 
-        InputController.getInstance().updateInputs();
-        // Do stuff
+                InputController.getInstance().updateInputs();
+                // Do stuff
 
-        // Notify when done
-        if( !InputController.getInstance().isGameRunning() ) {
-            System.out.println( " ---- GAME OVER ---- ");
-            synchronized(this) {
-                running = false;
-                this.notifyAll();
-            }
+                // Notify when done
+                if (!InputController.getInstance().isGameRunning()) {
+                    synchronized (ff) {
+                        ff.running = false;
+                        ff.notifyAll();
+                    }
+                }
+
+                synchronized (runningThreadLock) {
+                    runningThread = null;
+                }
+            });
+            runningThread.start();
         }
+
+
     }
 }
