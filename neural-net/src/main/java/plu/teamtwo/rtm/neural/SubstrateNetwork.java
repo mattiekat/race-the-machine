@@ -190,7 +190,7 @@ public class SubstrateNetwork implements NeuralNetwork {
         for(int layer = 0; layer < (layers.length - 1); ++layer) {
             final float[][] layerWeights = weights[layer];
             final int outputSize = layerSizes[layer + 1];
-            final int JOB_SIZE = Math.max(outputSize / TARGET_CPU_JOBS, 1);
+            final int JOB_SIZE = (outputSize / TARGET_CPU_JOBS) + 1;
             outputs = new float[outputSize];
 
             //for all the outputs, calculate the value based on all inputs and associated weights
