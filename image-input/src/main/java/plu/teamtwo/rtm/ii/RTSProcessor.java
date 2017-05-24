@@ -277,7 +277,7 @@ public class RTSProcessor {
 
                 // Process the Screencap
                 cap_queue.offer(processImg(cap));
-                if(cap_queue.size() > 300) cap_queue.poll();
+                if(cap_queue.size() > 60) cap_queue.poll();
                 //ProcessedData data = processImg(cap);
 
                 // Calculate current FPS

@@ -176,6 +176,7 @@ public class ImagePanel extends JPanel implements MouseListener, ActionListener 
             int yMax = (int)(Math.max(firstClick.y.doubleValue(), secondClick.y.doubleValue()) * yMod);
             if(scoreBoxGrabbing) {
                 rtsp.setNumBounds(new Point(xMin, yMin), new Point(xMax, yMax));
+                scoreBoxGrabbing = false;
             } else {
                 ScreenCap capper = new ScreenCap(xMin, yMin, xMax-xMin, yMax-yMin);
                 rtsp.setCapper(capper);
