@@ -348,6 +348,7 @@ public class MultilayerSubstrateEncoding implements Genome {
         {
             LinkedList<Future<NeuralNetwork>> fnets = new LinkedList<>();
             for(int i = 0; i < networks.length; ++i)
+                //TODO: better ways to make multiple copies of the same network
                 fnets.add(threadPool.submit(new Genome.ConstructNeuralNetwork(cppn)));
 
             for(int i = 0; i < networks.length; ++i)

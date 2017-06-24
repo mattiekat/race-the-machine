@@ -13,7 +13,7 @@ import java.util.concurrent.Future;
  */
 public class SubstrateNetwork implements NeuralNetwork {
     /// Target number of jobs for output calculations to be broken into.
-    private static final int TARGET_CPU_JOBS = 256;
+    private static final int TARGET_CPU_JOBS = Runtime.getRuntime().availableProcessors() * 2;
 
     /// Defines the dimensions of each layer, e.g. d[0] = [2, 3] would define an input of 2 by 3 (output is final layer)
     ///  this also defines the mapping of the input arrays to the first substrate and so on.
@@ -197,7 +197,7 @@ public class SubstrateNetwork implements NeuralNetwork {
             for(int out = 0; out < layerSizes[layer + 1]; out += JOB_SIZE) {
                 futures.add(threadPool.submit(new Calculator(out, out + JOB_SIZE, layer, last, outputs, layerWeights)));
             }
-            //new Calculator(out, layer, last, outputs, layerWeights[out]).run();
+            //new Calculator(0, layerSizes[layer + 1], layer, last, outputs, layerWeights).run();
 
             //Wait for all calculations to complete
             while(!futures.isEmpty()) try {
@@ -244,9 +244,16 @@ public class SubstrateNetwork implements NeuralNetwork {
 
         @Override
         public void run() {
-            float sum = 0;
             outEnd = Math.min(outputs.length, outEnd);
+            //
+            // Here lies my dignity:
+            // float sum = 0;
+            // May this stand as a reminder of many painful hours spent debugging,
+            // only to be solved months later after having set it aside, and all
+            // for a trivial mistake...
+            //
             for(int out = outStart; out < outEnd; ++out) {
+                float sum = 0;
                 //dot(input, weights[layer][out])
                 for(int in = 0; in < layerSizes[layer]; ++in)
                     sum += inputs[in] * weights[out][in];

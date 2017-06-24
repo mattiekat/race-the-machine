@@ -5,21 +5,22 @@ import plu.teamtwo.rtm.neat.GAController;
 import plu.teamtwo.rtm.neat.ScoringFunction;
 
 import static org.junit.Assert.assertEquals;
+import static plu.teamtwo.rtm.core.util.Rand.getRandomNum;
 
 
 public class MultilayerSubstrateEncodingTest {
-//    @Test
-//    public void test() {
-//        GAController controller = new GAController(
-//             new MultilayerSubstrateEncodingBuilder()
-//                     .inputs(new int[]{96, 96, 3})
-//                     .outputs(new int[]{3})
-//                     .addLayer(new int[]{96, 96, 3})
-//        );
-//
-//        controller.createFirstGeneration();
-//        controller.assesGeneration(new ScoreFunction());
-//    }
+    @Test
+    public void test() {
+        GAController controller = new GAController(
+             new MultilayerSubstrateEncodingBuilder()
+                     .inputs(new int[]{10, 10})
+                     .addLayer(new int[]{10, 10})
+                     .outputs(new int[]{4})
+        );
+
+        controller.createFirstGeneration();
+        controller.assesGeneration(new ScoreFunction());
+    }
 
 
     private class ScoreFunction implements ScoringFunction {
@@ -83,8 +84,11 @@ public class MultilayerSubstrateEncodingTest {
          */
         @Override
         public float[] generateInput() {
-            if(count++ < 5)
-                return new float[]{1, 2, 3, 4};
+            if(count++ < 4) {
+                float[] vals = new float[100];
+                for(int i = 0; i < 100; ++i)
+                    vals[i] = getRandomNum(-1, 1);
+            }
             return null;
         }
 
